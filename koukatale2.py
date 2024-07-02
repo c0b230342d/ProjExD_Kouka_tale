@@ -55,7 +55,7 @@ def check_bound(obj_rct:pg.Rect, left:int, right:int, top:int, bottom:int) -> tu
     return yoko, tate
     
 
-class Koukaton:
+class Koukaton(pg.sprite.Sprite):
     """
     こうかとんに関するクラス
     """
@@ -68,18 +68,19 @@ class Koukaton:
         """
         こうかとん画像Surfaceを生成する
         """
-        self.img = __class__.img
-        self.rct: pg.Rect = self.img.get_rect()
-        self.rct.center = WIDTH/2, HEIGHT/4+30
+        super().__init__()
+        self.image = __class__.img
+        self.rect: pg.Rect = self.image.get_rect()
+        self.rect.center = WIDTH/2, HEIGHT/4+30
 
     def update(self, screen: pg.Surface):
         """
         こうかとんを表示
         """
-        screen.blit(self.img, self.rct)
+        screen.blit(self.image, self.rect)
 
 
-class Hurt:
+class Hurt(pg.sprite.Sprite):
     """
     プレイヤー（ハート）に関するクラス
     """
@@ -99,9 +100,10 @@ class Hurt:
         ハート画像Surfaceを生成する
         引数 xy：ハート画像の初期位置座標タプル
         """
-        self.img = __class__.img
-        self.rct: pg.Rect = self.img.get_rect()
-        self.rct.center = xy
+        super().__init__()
+        self.image = __class__.img
+        self.rect: pg.Rect = self.image.get_rect()
+        self.rect.center = xy
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
         """
@@ -114,17 +116,17 @@ class Hurt:
             if key_lst[k]:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
-        self.rct.move_ip(sum_mv)
-        if check_bound2(self.rct) != (True, True):
-            self.rct.move_ip(-sum_mv[0], -sum_mv[1])
+        self.rect.move_ip(sum_mv)
+        if check_bound2(self.rect) != (True, True):
+            self.rect.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.img = __class__.img
+            self.image = __class__.img
         if sum_mv != [0, 0]:
             self.dire = sum_mv
-        screen.blit(self.img, self.rct)
+        screen.blit(self.image, self.rect)
 
 
-class AttackBeam:
+class AttackBeam(pg.sprite.Sprite):
     """
     こうかとんの落単ビーム攻撃に関するクラス
     """
@@ -134,6 +136,7 @@ class AttackBeam:
         color：色
         start_pos：スタート位置
         """
+        super().__init__()
         self.vx, self.vy = 0, +10
 
         self.font = pygame.font.Font(FONT, 18)
@@ -141,23 +144,25 @@ class AttackBeam:
         self.frct = self.label.get_rect()
         self.frct.center = start_pos
 
-        self.img = pg.Surface((100, 20), pg.SRCALPHA)
-        pg.draw.rect(self.img, color, (0, 0, 100, 20))
-        self.rct = self.img.get_rect()
-        self.rct.center = start_pos        
+        self.image = pg.Surface((100, 20), pg.SRCALPHA)
+        pg.draw.rect(self.image, color, (0, 0, 100, 20))
+        self.rect = self.image.get_rect()
+        self.rect.center = start_pos        
 
 
-    def update(self, screen: pg.Surface):
+    def update(self, screen: pg.Surface, reset=False):
         """
         引数1 screen：画面Surface
         """
-        self.rct.move_ip(self.vx, self.vy)
-        screen.blit(self.img, self.rct)
+        self.rect.move_ip(self.vx, self.vy)
+        screen.blit(self.image, self.rect)
         self.frct.move_ip(self.vx, self.vy)
-        screen.blit(self.label, self.frct)  
+        screen.blit(self.label, self.frct)
+        if check_bound1(self.rect) != (True, True) or reset:
+            self.kill()  
 
 
-class HealthBar:
+class HealthBar(pg.sprite.Sprite):
     """
     体力ゲージに関するクラス
     """
@@ -169,6 +174,7 @@ class HealthBar:
         引数4 max：体力の最大値
         引数5 gpa：表示するgpaの値
         """
+        super().__init__()
         self.x = x
         self.y = y
         self.width = width
@@ -196,7 +202,7 @@ class HealthBar:
         screen.blit(hp_text, (self.x + self.width + 10 + self.label.get_width(), self.y))
 
 
-class Dialogue:
+class Dialogue(pg.sprite.Sprite):
     """
     選択画面時のセリフに関するクラス
     """
@@ -204,6 +210,7 @@ class Dialogue:
         """
         引数なし
         """
+        super().__init__()
         self.font = pg.font.Font(FONT, 35)
         self.txt = "＊ こうかとんがあらわれた！"
         self.txt_len = len(self.txt)
@@ -222,7 +229,7 @@ class Dialogue:
         screen.blit(rend_txt, (40, HEIGHT/2-20))
 
 
-class Choice:
+class Choice(pg.sprite.Sprite):
     """
     選択肢に関するクラス
     """
@@ -232,6 +239,7 @@ class Choice:
         引数2 x：表示するx座標
         引数3 y：表示するy座標
         """
+        super().__init__()
         self.choice_ls = ls
         self.x = x
         self.y = y
@@ -353,7 +361,7 @@ def main():
     hurt = Hurt((WIDTH/2, HEIGHT/2+100 ))
 
     # こうかとんビーム（仮）の初期化
-    beams = [] 
+    beams = pg.sprite.Group()
 
     # セリフに関する初期化
     dialog = Dialogue()
@@ -452,7 +460,6 @@ def main():
             hp.update()
 
             choice.draw(screen)
-            pass
 
         elif gameschange == 3:  # 攻撃画面
             pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
@@ -460,13 +467,10 @@ def main():
             # 落単ビームの発生
             if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
                 start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
-                beams.append(AttackBeam((255, 255, 255), start_pos))
-            
-            # ヘルスの現象
-            for bm in range(len(beams)):
-                if beams[bm] is not None:
-                    if hurt.rct.colliderect(beams[bm].rct):
-                        hp.hp -= 1
+                beams.add(AttackBeam((255, 255, 255), start_pos))
+
+            if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
+                hp.hp -= 1
 
             kkton.update(screen)
         
@@ -474,18 +478,14 @@ def main():
             # ハートの移動
             hurt.update(key_lst, screen)
 
-            # 落単ビームの更新と削除
-            for beam in beams[:]:
-                beam.update(screen)
-                if not check_bound1(beam.rct)[1]:  # 画面外に出たビームを削除
-                    beams.remove(beam)
             if attack_tmr > 300: # 選択画面に戻る
                 dialog.update(screen, reset=True)
                 # 初期化
                 hurt = Hurt((WIDTH/2, HEIGHT/2+100))
-                for beam in beams[:]:
-                    beams.remove(beam)
-                gameschange = 0 
+                beams.update(screen, True)
+                gameschange = 0
+
+            beams.update(screen) 
 
             # HPの表示と更新
             hp.draw(screen)
@@ -497,8 +497,6 @@ def main():
             attack_tmr += 1
         
         # elif gameschange == 4:
-
-
         pg.display.update()
         clock.tick(30)
 
