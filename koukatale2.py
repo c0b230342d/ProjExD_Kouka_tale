@@ -91,7 +91,7 @@ class Koukaton(pg.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
-class Hurt(pg.sprite.Sprite):
+class Heart(pg.sprite.Sprite):
     """
     プレイヤー（ハート）に関するクラス
     """
@@ -176,10 +176,10 @@ class AttackBarrage(pg.sprite.Sprite):
     """
     弾幕攻撃に関するクラス
     """
-    def __init__(self, kkton: "Koukaton", hurt: "Hurt", angle = 0):
+    def __init__(self, kkton: "Koukaton", heart: "Heart", angle = 0):
         """
         引数1 kkton：こうかとん
-        引数2 hurt：攻撃対象のハート
+        引数2 heart：攻撃対象のハート
         """
         super().__init__()
         rad = 10
@@ -189,8 +189,8 @@ class AttackBarrage(pg.sprite.Sprite):
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
         
-        # 弾幕を発射する場所からみた攻撃対象(hurt)の方向を計算
-        self.vx, self.vy = calc_orientation(kkton.rect, hurt.rect)
+        # 弾幕を発射する場所からみた攻撃対象(heart)の方向を計算
+        self.vx, self.vy = calc_orientation(kkton.rect, heart.rect)
         angle = math.degrees(math.atan2(-self.vy, self.vx)) + angle
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -467,7 +467,7 @@ def main():
     # こうかとんの初期化
     kkton = Koukaton()
     # ハートの初期化
-    hurt = Hurt((WIDTH/2, HEIGHT/2+100 ))
+    heart = Heart((WIDTH/2, HEIGHT/2+100 ))
     # 落単ビームの初期化
     beams = pg.sprite.Group()
     # 弾幕の初期化
@@ -580,14 +580,14 @@ def main():
                         start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
                         beams.add(AttackBeam((255, 255, 255), start_pos))
                     # 落単との衝突判定
-                    if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
+                    if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
                         hp.hp -= 1
                 elif attack_rand == 1:
                     # 弾幕の発生
                     if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
                         for ang in set_barrages.gen_barrage():
-                            barrages.add(AttackBarrage(kkton, hurt, ang))
-                    if len(pg.sprite.spritecollide(hurt,barrages,False)) != 0:
+                            barrages.add(AttackBarrage(kkton, heart, ang))
+                    if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
                         hp.hp -= 1
 
                 if hp.hp <= 0:
@@ -600,12 +600,12 @@ def main():
                 kkton.update(screen)
                 # キーに応じたハートの移動
                 key_lst = pg.key.get_pressed()
-                hurt.update(key_lst, screen)
+                heart.update(key_lst, screen)
                 # 攻撃終了判定
                 if attack_tmr > 300: # 選択画面に戻る
                     dialog.update(screen, True)
                     # 初期化
-                    hurt = Hurt((WIDTH/2, HEIGHT/2+100))
+                    heart = Heart((WIDTH/2, HEIGHT/2+100))
                     beams.update(screen, True)
                     barrages.update(True)
                     gameschange = 0
@@ -625,12 +625,10 @@ def main():
         # GameOver 
         elif scenechange == 2:            
             if gameover_tmr > 500:
-                scenechange = 1
+                return
             gameov.update(screen)
             pg.display.update()
             gameover_tmr += 1
-            print("Game Over")
-
 
         # elif gameschange == 4:
         pg.display.update()
