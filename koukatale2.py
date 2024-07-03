@@ -5,6 +5,7 @@ from pygame.locals import *
 import pygame.mixer
 import time
 import random
+import math
 
 # グローバル変数
 WIDTH, HEIGHT = 1024, 768 # ディスプレイサイズ
@@ -53,6 +54,17 @@ def check_bound(obj_rct:pg.Rect, left:int, right:int, top:int, bottom:int) -> tu
     if obj_rct.top < top or bottom < obj_rct.bottom:
         tate = False
     return yoko, tate
+
+def calc_orientation(org: pg.Rect, dst: pg.Rect) -> tuple[float, float]:
+    """
+    orgから見て，dstがどこにあるかを計算し，方向ベクトルをタプルで返す
+    引数1 org：爆弾SurfaceのRect
+    引数2 dst：こうかとんSurfaceのRect
+    戻り値：orgから見たdstの方向ベクトルを表すタプル
+    """
+    x_diff, y_diff = dst.centerx-org.centerx, dst.centery-org.centery
+    norm = math.sqrt(x_diff**2+y_diff**2)
+    return x_diff/norm, y_diff/norm
     
 
 class Koukaton(pg.sprite.Sprite):
@@ -160,6 +172,38 @@ class AttackBeam(pg.sprite.Sprite):
         screen.blit(self.label, self.frct)
         if check_bound1(self.rect) != (True, True) or reset:
             self.kill()  
+
+
+class AttackBarrage(pg.sprite.Sprite):
+    """
+    弾幕攻撃に関するクラス
+    """
+    def __init__(self, kkton: "Koukaton", hurt: "Hurt"):
+        """
+        引数1 kkton：こうかとん
+        引数2 hurt：攻撃対象のハート
+        """
+        super().__init__()
+        rad = 10
+        self.image = pg.Surface((2*rad, 2*rad))
+        color = (255, 255, 255)  # 爆弾円の色：クラス変数からランダム選択
+        pg.draw.circle(self.image, color, (rad, rad), rad)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        # 弾幕を発射する場所からみた攻撃対象(hurt)の方向を計算
+        self.vx, self.vy = calc_orientation(kkton.rect, hurt.rect)
+        self.rect.centerx = kkton.rect.centerx
+        self.rect.centery = kkton.rect.centery+kkton.rect.height//2-40
+        self.speed = 10
+
+    def update(self, reset=False):
+        """
+        弾幕を速度ベクトルself.vx, self.vyに基づき移動させる
+        引数 reset：resetしたいときにTrueにする
+        """
+        self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
+        if check_bound1(self.rect) != (True, True) or reset:
+            self.kill()
 
 
 class HealthBar(pg.sprite.Sprite):
@@ -285,6 +329,7 @@ class Choice(pg.sprite.Sprite):
         elif key == pg.K_RIGHT:
             self.index = (self.index + 1) % len(self.choice_ls)  # 左端から右端へ
 
+
 class AfterChoice:
     """
     選択肢を選んだあとの画面に関するクラス
@@ -353,35 +398,32 @@ def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))   
     # シーン状態の推移
     gameschange = 0  # 0：選択画面, 1：攻撃
-
     # こうかとんの初期化
     kkton = Koukaton()
-
     # ハートの初期化
     hurt = Hurt((WIDTH/2, HEIGHT/2+100 ))
-
-    # こうかとんビーム（仮）の初期化
+    # 落単ビームの初期化
     beams = pg.sprite.Group()
-
+    # 弾幕の初期化
+    barrages = pg.sprite.Group()
     # セリフに関する初期化
     dialog = Dialogue()
-
     # ヘルスバーに関する初期化
     gpa = random.uniform(1, 4)
     max_hp = int(gpa*20)
     hp =HealthBar(WIDTH/4, 5*HEIGHT/6, max_hp+4, max_hp, gpa) # maxの値はwidth-4を割り切れる数にする
-
     # 選択肢の初期化
-    choice_ls = ["たたかう", "こうどう", "アイテム", "みのがす"]
+    choice_ls = ["たたかう", 
+                 "こうどう", 
+                 "アイテム", 
+                 "みのがす"]
     choice = Choice(choice_ls, 10, HEIGHT - 80)
-
     # アタックバーの初期化
     attack_bar = AttackBar()
-
     clock = pg.time.Clock()  # time
     select_tmr = 0  # 選択画面時のタイマーの初期値
     attack_tmr = 0  # 攻撃中のタイマーの初期値
-
+    attack_rand = 0
     pygame.mixer.init()
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
     sound.play(-1)
@@ -412,6 +454,7 @@ def main():
                 # アタックバーなら
                 elif gameschange == 2:
                     if event.key == pg.K_RETURN:
+                        attack_rand = random.randint(0, 1)
                         gameschange = 3             
         
         # 背景関連
@@ -452,50 +495,58 @@ def main():
 
         elif gameschange == 2:  # アタックバー画面
             pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+            # こうかとんの表示
             kkton.update(screen)
-
+            # アタックバーの表示
             attack_bar.update(screen)
-
+            # hpの表示
             hp.draw(screen)
             hp.update()
-
+            # 選択肢の表示
             choice.draw(screen)
 
         elif gameschange == 3:  # 攻撃画面
             pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
-
-            # 落単ビームの発生
-            if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
-                start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
-                beams.add(AttackBeam((255, 255, 255), start_pos))
-
-            if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
-                hp.hp -= 1
-
+            if attack_rand == 0:
+                # 落単ビームの発生
+                if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+                    start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
+                    beams.add(AttackBeam((255, 255, 255), start_pos))
+                # 落単との衝突判定
+                if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
+                    hp.hp -= 1
+            elif attack_rand == 1:
+                # 弾幕の発生
+                if attack_tmr % 7 == 0:  # 一定時間ごとにビームを生成
+                    barrages.add(AttackBarrage(kkton, hurt))
+                if len(pg.sprite.spritecollide(hurt,barrages,False)) != 0:
+                    hp.hp -= 1
+            
+            # こうかとんの表示
             kkton.update(screen)
-        
+            # キーに応じたハートの移動
             key_lst = pg.key.get_pressed()
-            # ハートの移動
             hurt.update(key_lst, screen)
-
+            # 攻撃終了判定
             if attack_tmr > 300: # 選択画面に戻る
                 dialog.update(screen, reset=True)
                 # 初期化
                 hurt = Hurt((WIDTH/2, HEIGHT/2+100))
                 beams.update(screen, True)
+                barrages.update(True)
                 gameschange = 0
-
+            # 落単の表示
             beams.update(screen) 
-
+            # 弾幕の表示と更新
+            barrages.update()
+            barrages.draw(screen)
             # HPの表示と更新
             hp.draw(screen)
             hp.update()
-
             # 選択肢の表示
             choice.draw(screen, True)
-            
             attack_tmr += 1
-        
+
         # elif gameschange == 4:
         pg.display.update()
         clock.tick(30)
