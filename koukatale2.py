@@ -215,6 +215,9 @@ class SettingBarrage(pg.sprite.Sprite):
     弾幕生成に関するクラス
     """
     def __init__(self, num = 5):
+        """
+        引数1 num:弾幕の拡散量
+        """
         super().__init__()
         self.num = num
         self.ang = []
