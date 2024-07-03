@@ -119,10 +119,10 @@ class Hurt(pg.sprite.Sprite):
         self.rect.move_ip(sum_mv)
         if check_bound2(self.rect) != (True, True):
             self.rect.move_ip(-sum_mv[0], -sum_mv[1])
-        if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.image = __class__.img
-        if sum_mv != [0, 0]:
-            self.dire = sum_mv
+        # if not (sum_mv[0] == 0 and sum_mv[1] == 0):
+        #     self.image = __class__.img
+        # if sum_mv != [0, 0]:
+        #     self.dire = sum_mv
         screen.blit(self.image, self.rect)
 
 
@@ -383,6 +383,8 @@ def main():
     attack_tmr = 0  # 攻撃中のタイマーの初期値
 
     pygame.mixer.init()
+    select_voice = pg.mixer.Sound("./voice/snd_select.wav")
+    attack_voice = pg.mixer.Sound("./voice/attack.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
     sound.play(-1)
 
@@ -396,6 +398,7 @@ def main():
                     choice.update(event.key)
                     if event.key == pg.K_RETURN:  # エンターキーを押されたら
                         if choice.index == 0:  # こうげきを選択していたら
+                            select_voice.play(0)
                             gameschange = 1
                         elif choice.index == 1:  # こうどうを選択していたら
                             pass
@@ -408,10 +411,12 @@ def main():
                     if event.key == pg.K_ESCAPE:
                         gameschange = 0
                     elif event.key == pg.K_RETURN:
+                        select_voice.play(0)
                         gameschange = 2
                 # アタックバーなら
                 elif gameschange == 2:
                     if event.key == pg.K_RETURN:
+                        attack_voice.play(0)
                         gameschange = 3             
         
         # 背景関連
