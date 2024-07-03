@@ -75,7 +75,6 @@ class Koukaton(pg.sprite.Sprite):
         pg.image.load("fig/dot_kk_negate.png"),
         0,1.5
     )
-
     def __init__(self):
         """
         こうかとん画像Surfaceを生成する
@@ -161,7 +160,6 @@ class AttackBeam(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = start_pos        
 
-
     def update(self, screen: pg.Surface, reset=False):
         """
         引数1 screen：画面Surface
@@ -197,7 +195,7 @@ class AttackBarrage(pg.sprite.Sprite):
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
 
-        self.rect.centerx = kkton.rect.centerx
+        self.rect.centerx = kkton.rect.centerx-40 # バックから出ているように調整
         self.rect.centery = kkton.rect.centery+kkton.rect.height//2-40
         self.speed = 10
 
@@ -223,7 +221,7 @@ class SettingBarrage(pg.sprite.Sprite):
         self.ang = []
     
     def update(self):
-        step = range(-50, 51, (int(100/(self.num-1))))
+        step = range(-50, 51, (int(70/(self.num-1))))
         self.ang = [i+random.randint(-5,5) for i in step]
 
     def gen_barrage(self):
@@ -506,16 +504,15 @@ def main():
 
         elif gameschange == 1:  # こうげきを選択した場合
             pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
-
             # 選択肢後の画面に関する初期化
             afterchoice = AfterChoice(["＊　こうかとん"])   
             kkton.update(screen)
-
+            # 攻撃相手の選択画面
             afterchoice.draw(screen)
-
+            # 体力バーの更新
             hp.draw(screen)
             hp.update()
-
+            # 選択肢の更新
             choice.draw(screen)
 
         elif gameschange == 2:  # アタックバー画面
@@ -555,7 +552,7 @@ def main():
             hurt.update(key_lst, screen)
             # 攻撃終了判定
             if attack_tmr > 300: # 選択画面に戻る
-                dialog.update(screen, reset=True)
+                dialog.update(screen, True)
                 # 初期化
                 hurt = Hurt((WIDTH/2, HEIGHT/2+100))
                 beams.update(screen, True)
