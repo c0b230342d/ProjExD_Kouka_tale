@@ -413,12 +413,56 @@ class AttackBar:
             self.vx *= -1
         self.rrct.move_ip(self.vx, self.vy)
         screen.blit(self.rimg, self.rrct)
+
+
+class GameOver:
+    """
+    ゲームオーバー画面に関するクラス
+    """
+    def __init__(self, rand : int):
+        self.font = pg.font.Font(FONT_F, 150)
+        self.txt1 = "GAME"
+        self.txt2 = "OVER"
+        self.txt_mes = [
+            "あきらめては　いけない...", 
+            "あきらめては　ダメだ！",
+            "たんいを　すてるな！",
+            "しっかりしろ！",
+            ]
+        self.font2 = pg.font.Font(FONT, 50)
+        self.txt3 = self.txt_mes[rand]
+        self.txt_len = len(self.txt3)
+        self.index = 0
+
+    def update(self, screen: pg.Surface,reset=None):
+        """
+        引数1 screen：画面Surface
+        引数2 reset：画面切り替え時に戻す
+        """
+        rend_txt1 = self.font.render(self.txt1, False, (255, 255, 255))
+        txt_rect1  = rend_txt1.get_rect()
+        txt_rect1.center = WIDTH/2, 2*HEIGHT/6
+        screen.blit(rend_txt1, txt_rect1)
+        rend_txt2 = self.font.render(self.txt2, False, (255, 255, 255))
+        txt_rect2  = rend_txt2.get_rect()
+        txt_rect2.center = WIDTH/2, 3*HEIGHT/6
+        screen.blit(rend_txt2, txt_rect2)
+
+        if self.index < self.txt_len:
+            self.index += 1
+        if reset:
+            self.index = 0
+        rend_txt3 = self.font2.render(self.txt3[:self.index], True, (255, 255, 255))
+        txt_rect3  = rend_txt3.get_rect()
+        txt_rect3.center = WIDTH/2, 4*HEIGHT/6
+        screen.blit(rend_txt3, txt_rect3)
     
 
 def main():
     pg.display.set_caption("koukAtale")
     screen = pg.display.set_mode((WIDTH, HEIGHT))   
     # シーン状態の推移
+    scenechange = 1  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
     gameschange = 0  # 0：選択画面, 1：攻撃
     # こうかとんの初期化
     kkton = Koukaton()
@@ -443,10 +487,14 @@ def main():
     choice = Choice(choice_ls, 10, HEIGHT - 80)
     # アタックバーの初期化
     attack_bar = AttackBar()
+    # GameOverの初期化
+    gameov = GameOver(random.randint(0, 3))
     clock = pg.time.Clock()  # time
     select_tmr = 0  # 選択画面時のタイマーの初期値
     attack_tmr = 0  # 攻撃中のタイマーの初期値
     attack_rand = 0
+    gameover_tmr = 0  # gameover中のタイマー
+
     pygame.mixer.init()
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
     sound.play(-1)
@@ -483,93 +531,106 @@ def main():
         # 背景関連
         screen.fill((0,0,0))
 
-        # GameOver          
-        if hp.hp <= 0:
+        if scenechange == 1:  # 攻撃
+
+            if gameschange == 0:  # 選択画面
+                attack_tmr = 0
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                kkton.update(screen)
+
+                dialog.update(screen)
+
+                hp.draw(screen)
+                hp.update()
+
+                choice.draw(screen)
+
+                select_tmr += 1
+
+            elif gameschange == 1:  # こうげきを選択した場合
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice = AfterChoice(["＊　こうかとん"])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
+
+            elif gameschange == 2:  # アタックバー画面
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # こうかとんの表示
+                kkton.update(screen)
+                # アタックバーの表示
+                attack_bar.update(screen)
+                # hpの表示
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の表示
+                choice.draw(screen)
+
+            elif gameschange == 3:  # 攻撃画面
+                pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
+                if attack_rand == 0:
+                    # 落単ビームの発生
+                    if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+                        start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
+                        beams.add(AttackBeam((255, 255, 255), start_pos))
+                    # 落単との衝突判定
+                    if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
+                        hp.hp -= 1
+                elif attack_rand == 1:
+                    # 弾幕の発生
+                    if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+                        for ang in set_barrages.gen_barrage():
+                            barrages.add(AttackBarrage(kkton, hurt, ang))
+                    if len(pg.sprite.spritecollide(hurt,barrages,False)) != 0:
+                        hp.hp -= 1
+
+                if hp.hp <= 0:
+                    sound.stop()
+                    sound = pg.mixer.Sound("./sound/gameover.mp3")
+                    sound.play(-1)
+                    scenechange = 2
+
+                # こうかとんの表示
+                kkton.update(screen)
+                # キーに応じたハートの移動
+                key_lst = pg.key.get_pressed()
+                hurt.update(key_lst, screen)
+                # 攻撃終了判定
+                if attack_tmr > 300: # 選択画面に戻る
+                    dialog.update(screen, True)
+                    # 初期化
+                    hurt = Hurt((WIDTH/2, HEIGHT/2+100))
+                    beams.update(screen, True)
+                    barrages.update(True)
+                    gameschange = 0
+                # 落単の表示
+                beams.update(screen) 
+                # 弾幕の表示と更新
+                barrages.update()
+                barrages.draw(screen)
+                set_barrages.update()
+                # HPの表示と更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の表示
+                choice.draw(screen, True)
+                attack_tmr += 1
+        
+        # GameOver 
+        elif scenechange == 2:            
+            if gameover_tmr > 500:
+                scenechange = 1
+            gameov.update(screen)
+            pg.display.update()
+            gameover_tmr += 1
             print("Game Over")
-            return
 
-        if gameschange == 0:  # 選択画面
-            attack_tmr = 0
-            pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
-            kkton.update(screen)
-
-            dialog.update(screen)
-
-            hp.draw(screen)
-            hp.update()
-
-            choice.draw(screen)
-
-            select_tmr += 1
-
-        elif gameschange == 1:  # こうげきを選択した場合
-            pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
-            # 選択肢後の画面に関する初期化
-            afterchoice = AfterChoice(["＊　こうかとん"])   
-            kkton.update(screen)
-            # 攻撃相手の選択画面
-            afterchoice.draw(screen)
-            # 体力バーの更新
-            hp.draw(screen)
-            hp.update()
-            # 選択肢の更新
-            choice.draw(screen)
-
-        elif gameschange == 2:  # アタックバー画面
-            pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
-            # こうかとんの表示
-            kkton.update(screen)
-            # アタックバーの表示
-            attack_bar.update(screen)
-            # hpの表示
-            hp.draw(screen)
-            hp.update()
-            # 選択肢の表示
-            choice.draw(screen)
-
-        elif gameschange == 3:  # 攻撃画面
-            pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
-            if attack_rand == 0:
-                # 落単ビームの発生
-                if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
-                    start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
-                    beams.add(AttackBeam((255, 255, 255), start_pos))
-                # 落単との衝突判定
-                if len(pg.sprite.spritecollide(hurt, beams, False)) != 0:
-                    hp.hp -= 1
-            elif attack_rand == 1:
-                # 弾幕の発生
-                if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
-                    for ang in set_barrages.gen_barrage():
-                        barrages.add(AttackBarrage(kkton, hurt, ang))
-                if len(pg.sprite.spritecollide(hurt,barrages,False)) != 0:
-                    hp.hp -= 1
-            
-            # こうかとんの表示
-            kkton.update(screen)
-            # キーに応じたハートの移動
-            key_lst = pg.key.get_pressed()
-            hurt.update(key_lst, screen)
-            # 攻撃終了判定
-            if attack_tmr > 300: # 選択画面に戻る
-                dialog.update(screen, True)
-                # 初期化
-                hurt = Hurt((WIDTH/2, HEIGHT/2+100))
-                beams.update(screen, True)
-                barrages.update(True)
-                gameschange = 0
-            # 落単の表示
-            beams.update(screen) 
-            # 弾幕の表示と更新
-            barrages.update()
-            barrages.draw(screen)
-            set_barrages.update()
-            # HPの表示と更新
-            hp.draw(screen)
-            hp.update()
-            # 選択肢の表示
-            choice.draw(screen, True)
-            attack_tmr += 1
 
         # elif gameschange == 4:
         pg.display.update()
