@@ -178,7 +178,7 @@ class AttackBarrage(pg.sprite.Sprite):
     """
     弾幕攻撃に関するクラス
     """
-    def __init__(self, kkton: "Koukaton", hurt: "Hurt"):
+    def __init__(self, kkton: "Koukaton", hurt: "Hurt", angle = 0):
         """
         引数1 kkton：こうかとん
         引数2 hurt：攻撃対象のハート
@@ -190,8 +190,13 @@ class AttackBarrage(pg.sprite.Sprite):
         pg.draw.circle(self.image, color, (rad, rad), rad)
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
+        
         # 弾幕を発射する場所からみた攻撃対象(hurt)の方向を計算
         self.vx, self.vy = calc_orientation(kkton.rect, hurt.rect)
+        angle = math.degrees(math.atan2(-self.vy, self.vx)) + angle
+        self.vx = math.cos(math.radians(angle))
+        self.vy = -math.sin(math.radians(angle))
+
         self.rect.centerx = kkton.rect.centerx
         self.rect.centery = kkton.rect.centery+kkton.rect.height//2-40
         self.speed = 10
@@ -204,6 +209,22 @@ class AttackBarrage(pg.sprite.Sprite):
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound1(self.rect) != (True, True) or reset:
             self.kill()
+
+class SettingBarrage(pg.sprite.Sprite):
+    """
+    弾幕生成に関するクラス
+    """
+    def __init__(self, num = 5):
+        super().__init__()
+        self.num = num
+        self.ang = []
+    
+    def update(self):
+        step = range(-50, 51, (int(100/(self.num-1))))
+        self.ang = [i+random.randint(-5,5) for i in step]
+
+    def gen_barrage(self):
+        return self.ang
 
 
 class HealthBar(pg.sprite.Sprite):
@@ -406,6 +427,7 @@ def main():
     beams = pg.sprite.Group()
     # 弾幕の初期化
     barrages = pg.sprite.Group()
+    set_barrages = SettingBarrage() 
     # セリフに関する初期化
     dialog = Dialogue()
     # ヘルスバーに関する初期化
@@ -517,8 +539,9 @@ def main():
                     hp.hp -= 1
             elif attack_rand == 1:
                 # 弾幕の発生
-                if attack_tmr % 7 == 0:  # 一定時間ごとにビームを生成
-                    barrages.add(AttackBarrage(kkton, hurt))
+                if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+                    for ang in set_barrages.gen_barrage():
+                        barrages.add(AttackBarrage(kkton, hurt, ang))
                 if len(pg.sprite.spritecollide(hurt,barrages,False)) != 0:
                     hp.hp -= 1
             
@@ -540,6 +563,7 @@ def main():
             # 弾幕の表示と更新
             barrages.update()
             barrages.draw(screen)
+            set_barrages.update()
             # HPの表示と更新
             hp.draw(screen)
             hp.update()
