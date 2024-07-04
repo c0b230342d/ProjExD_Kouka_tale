@@ -386,7 +386,7 @@ def main():
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
     attack_voice = pg.mixer.Sound("./voice/attack.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
-    sound.play(-1)
+    sound.play(0)
 
     while True:
         for event in pg.event.get():
@@ -442,6 +442,9 @@ def main():
             select_tmr += 1
 
         elif gameschange == 1:  # こうげきを選択した場合
+            sound.stop()
+            sound.play(-1)
+
             pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
 
             # 選択肢後の画面に関する初期化
