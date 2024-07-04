@@ -662,6 +662,8 @@ def main():
     moving_right = False
 
     pygame.mixer.init()
+    select_voice = pg.mixer.Sound("./voice/snd_select.wav")
+    attack_voice = pg.mixer.Sound("./voice/attack.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
     sound.play(-1)
 
@@ -675,6 +677,7 @@ def main():
                     choice.update(event.key)
                     if event.key == pg.K_RETURN:  # エンターキーを押されたら
                         if choice.index == 0:  # こうげきを選択していたら
+                            select_voice.play(0)
                             gameschange = 1
                         elif choice.index == 1:  # こうどうを選択していたら
                             pass
@@ -687,10 +690,12 @@ def main():
                     if event.key == pg.K_ESCAPE:
                         gameschange = 0
                     elif event.key == pg.K_RETURN:
+                        select_voice.play(0)
                         gameschange = 2
                 # アタックバーなら
                 elif gameschange == 2:
                     if event.key == pg.K_RETURN:
+                        attack_voice.play(0)
                         attack_rand = random.randint(0, 1)
                         gameschange = 3
 
