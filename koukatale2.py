@@ -233,7 +233,7 @@ class SettingBarrage(pg.sprite.Sprite):
     
     def update(self):
         step = range(-50, 51, (int(70/(self.num-1))))
-        self.ang = [i+random.randint(-5,5) for i in step]
+        self.ang = [i+random.randint(-10,10) for i in step]
 
     def gen_barrage(self):
         return self.ang
