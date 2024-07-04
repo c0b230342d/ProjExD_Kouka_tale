@@ -11,6 +11,7 @@ import math
 WIDTH, HEIGHT = 1024, 768 # ディスプレイサイズ
 FONT = "font/JF-Dot-MPlusS10.ttf"  # ドット文字細目
 FONT_F = "font/JF-Dot-MPlusS10B.ttf"  # ドット文字太目
+GRAVITY = 0.75  #重力の大きさ。ジャンプした時に落ちる力。
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -145,6 +146,114 @@ class Heart(pg.sprite.Sprite):
                 if self.invincible_time % 5 == 0:
                     screen.blit(self.image, self.rect)
         else:        
+            screen.blit(self.image, self.rect)
+
+
+class HeartGrav(pg.sprite.Sprite):
+    """
+    プレイヤー（ハート）に関するクラス
+    """
+    delta = {  # 押下キーと移動量の辞書
+        pg.K_UP: (0, -5),
+        pg.K_DOWN: (0, +5),
+        pg.K_LEFT: (-5, 0),
+        pg.K_RIGHT: (+5, 0),
+    }
+    img = pg.transform.rotozoom(
+        pg.image.load("fig/Undertale_hurt.png"), 
+        0, 0.02
+        )
+
+    dx = 0  # x軸方向の移動量
+    dy = 0  # y軸方向の移動量
+
+    invincible_time = 30  # 無敵時間
+    
+    def __init__(self, xy: tuple[int, int]):
+        """
+        ハート画像Surfaceを生成する
+        引数 xy：ハート画像の初期位置座標タプル
+        """
+        super().__init__()
+        self.image = __class__.img
+        self.rect: pg.Rect = self.image.get_rect()
+        self.rect.center = xy
+
+		# heartの移動スピードを代入
+        self.speed = +5.0
+		# Y軸方向の速度
+        self.vel_y = 0
+		# ジャンプのフラグ
+        self.jump = False
+		# 空中にいるかどうかのフラグ
+        self.in_air = True
+
+        self.invincible = False
+
+    def update(self, moving_left, moving_right, screen: pg.Surface):
+        """
+        押下キーに応じてハートを移動させる
+		引数1 moving_left：左移動フラグ
+		引数2 moving_right：右移動フラグ
+        引数3 screen：画面Surface
+		"""
+		# 移動量をリセット。dx,dyと表記しているのは微小な移動量を表すため。微分、積分で使うdx,dy。
+        dx = 0
+        dy = 0
+
+		# 左に移動
+        if moving_left:
+			# スピードの分だけ移動。座標系において左は負の方向
+            dx = -self.speed
+
+		# 右に移動
+        if moving_right:
+			# スピードの分だけ移動。座標系において左は負の方向
+            dx = self.speed
+
+		#ジャンプ
+		# ジャンプ中かつ空中フラグはまだFalse
+        if self.jump == True and self.in_air == False:
+			# Y軸方向の速度
+            self.vel_y = -11
+			# ジャンプのフラグを更新
+            self.jump = False
+			# 空中フラグを更新
+            self.in_air = True
+
+		# 重力を適用。Y軸方向の速度に重力を加える。この重力は重力速度である。単位時間あたりの速度と考えるので力をそのまま速度に足して良い。
+
+        self.vel_y += GRAVITY
+		# Y軸方向の速度が一定以上なら
+        if self.vel_y > 10:
+			# 速さはゼロになる
+            self.vel_y
+		# Y軸方向の微小な移動距離を更新.単位時間なので距離に速度を足すことができる
+        dy += self.vel_y
+
+        self.rect.move_ip([dx, dy])
+
+        # 床との衝突判定
+        if self.rect.bottom + dy > (HEIGHT/2-50)+300-5:
+            dy = (HEIGHT/2-50)+300-5 - self.rect.bottom
+			# 空中フラグを更新
+            self.in_air = False
+            self.rect.move_ip([0, dy])
+        
+        # 壁との衝突判定
+        if self.rect.left < WIDTH/2-150+5 or WIDTH/2+150-5 < self.rect.right:  # 横判定
+            dx = -dx
+            self.rect.move_ip([dx, 0])
+
+        if self.invincible:  # 無敵時間の設定
+            if self.invincible_time == 0:
+                self.invincible = False
+                self.invincible_time = __class__.invincible_time
+            else:
+                self.invincible_time -= 1
+                if self.invincible_time % 5 == 0:
+                    screen.blit(self.image, self.rect)
+        else:
             screen.blit(self.image, self.rect)
 
 
@@ -518,7 +627,9 @@ def main():
     # こうかとんの初期化
     kkton = Koukaton()
     # ハートの初期化
-    heart = Heart((WIDTH/2, HEIGHT/2+100 ))
+    # heart = Heart((WIDTH/2, HEIGHT/2+100 ))
+    # 重力ハートの初期化
+    heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
     # 落単ビームの初期化
     beams = pg.sprite.Group()
     # 弾幕の初期化
@@ -545,6 +656,10 @@ def main():
     attack_tmr = 0  # 攻撃中のタイマーの初期値
     attack_rand = 0
     gameover_tmr = 0  # gameover中のタイマー
+
+    # プレイヤーの進行方向のフラグ
+    moving_left = False
+    moving_right = False
 
     pygame.mixer.init()
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
@@ -577,7 +692,26 @@ def main():
                 elif gameschange == 2:
                     if event.key == pg.K_RETURN:
                         attack_rand = random.randint(0, 1)
-                        gameschange = 3             
+                        gameschange = 3
+
+                if event.key == pygame.K_LEFT:
+                    # 左移動フラグをTrue
+                    moving_left = True
+                if event.key == pygame.K_RIGHT:
+                    # 右移動フラグをTrue
+                    moving_right = True
+                # wキーを押す、かつ、プレイヤーが生きている
+                if event.key == pygame.K_UP:
+                    # ジャンプフラグをTrue
+                    heart.jump = True
+
+            elif event.type == pg.KEYUP:
+                if event.key == pg.K_LEFT:
+                    # 左移動フラグをTrue
+                    moving_left = False
+                if event.key == pg.K_RIGHT:
+                    # 右移動フラグをTrue
+                    moving_right = False
         
         # 背景関連
         screen.fill((0,0,0))
@@ -619,6 +753,61 @@ def main():
                 # 選択肢の表示
                 choice.draw(screen)
 
+            # elif gameschange == 3:  # 攻撃画面
+            #     pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
+            #     if attack_rand == 0:
+            #         # 落単ビームの発生
+            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+            #             start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
+            #             beams.add(AttackBeam((255, 255, 255), start_pos))
+            #         # 落単との衝突判定
+            #         if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
+            #             if heart.invincible == False:
+            #                 hp.hp -= 1
+            #                 heart.invincible = True
+            #     elif attack_rand == 1:
+            #         # 弾幕の発生
+            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+            #             for ang in set_barrages.gen_barrage():
+            #                 barrages.add(AttackBarrage(kkton, heart, ang))
+            #         if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
+            #             if heart.invincible == False:
+            #                 hp.hp -= 1
+            #                 heart.invincible = True
+
+            #     # gameover判定
+            #     if hp.hp <= 0:
+            #         sound.stop()
+            #         # brea
+            #         breakheart = BreakHeart(heart.rect.x, heart.rect.y)
+            #         scenechange = 2
+
+            #     # こうかとんの表示
+            #     kkton.update(screen)
+            #     # キーに応じたハートの移動
+            #     key_lst = pg.key.get_pressed()
+            #     heart.update(key_lst, screen)
+            #     # 攻撃終了判定
+            #     if attack_tmr > 300: # 選択画面に戻る
+            #         dialog.update(screen, True)
+            #         # 初期化
+            #         heart = Heart((WIDTH/2, HEIGHT/2+100))
+            #         beams.update(screen, True)
+            #         barrages.update(True)
+            #         gameschange = 0
+            #     # 落単の表示
+            #     beams.update(screen) 
+            #     # 弾幕の表示と更新
+            #     barrages.update()
+            #     barrages.draw(screen)
+            #     set_barrages.update()
+            #     # HPの表示と更新
+            #     hp.draw(screen)
+            #     hp.update()
+            #     # 選択肢の表示
+            #     choice.draw(screen, True)
+            #     attack_tmr += 1
+
             elif gameschange == 3:  # 攻撃画面
                 pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
                 if attack_rand == 0:
@@ -651,13 +840,12 @@ def main():
                 # こうかとんの表示
                 kkton.update(screen)
                 # キーに応じたハートの移動
-                key_lst = pg.key.get_pressed()
-                heart.update(key_lst, screen)
+                heart.update(moving_left, moving_right, screen)
                 # 攻撃終了判定
                 if attack_tmr > 300: # 選択画面に戻る
                     dialog.update(screen, True)
                     # 初期化
-                    heart = Heart((WIDTH/2, HEIGHT/2+100))
+                    heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
                     beams.update(screen, True)
                     barrages.update(True)
                     gameschange = 0
