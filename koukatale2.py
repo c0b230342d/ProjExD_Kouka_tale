@@ -105,6 +105,7 @@ class Heart(pg.sprite.Sprite):
         pg.image.load("fig/Undertale_hurt.png"), 
         0, 0.02
         ) 
+    invincible_time = 30  # 無敵時間
     
     def __init__(self, xy: tuple[int, int]):
         """
@@ -115,6 +116,7 @@ class Heart(pg.sprite.Sprite):
         self.image = __class__.img
         self.rect: pg.Rect = self.image.get_rect()
         self.rect.center = xy
+        self.invincible = False
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
         """
@@ -134,7 +136,16 @@ class Heart(pg.sprite.Sprite):
             self.image = __class__.img
         if sum_mv != [0, 0]:
             self.dire = sum_mv
-        screen.blit(self.image, self.rect)
+        if self.invincible:  # 無敵時間の設定
+            if self.invincible_time == 0:
+                self.invincible = False
+                self.invincible_time = __class__.invincible_time
+            else:
+                self.invincible_time -= 1
+                if self.invincible_time % 5 == 0:
+                    screen.blit(self.image, self.rect)
+        else:        
+            screen.blit(self.image, self.rect)
 
 
 class AttackBeam(pg.sprite.Sprite):
@@ -617,14 +628,18 @@ def main():
                         beams.add(AttackBeam((255, 255, 255), start_pos))
                     # 落単との衝突判定
                     if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
-                        hp.hp -= 1
+                        if heart.invincible == False:
+                            hp.hp -= 1
+                            heart.invincible = True
                 elif attack_rand == 1:
                     # 弾幕の発生
                     if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
                         for ang in set_barrages.gen_barrage():
                             barrages.add(AttackBarrage(kkton, heart, ang))
                     if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
-                        hp.hp -= 1
+                        if heart.invincible == False:
+                            hp.hp -= 1
+                            heart.invincible = True
 
                 # gameover判定
                 if hp.hp <= 0:
