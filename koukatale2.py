@@ -433,6 +433,7 @@ class GameOver:
         self.txt3 = self.txt_mes[rand]
         self.txt_len = len(self.txt3)
         self.index = 0
+        self.tmr = 0
 
     def update(self, screen: pg.Surface,reset=None):
         """
@@ -448,16 +449,55 @@ class GameOver:
         txt_rect2.center = WIDTH/2, 3*HEIGHT/6
         screen.blit(rend_txt2, txt_rect2)
 
-        if self.index < self.txt_len:
-            self.index += 1
         if reset:
             self.index = 0
-        rend_txt3 = self.font2.render(self.txt3[:self.index], True, (255, 255, 255))
-        txt_rect3  = rend_txt3.get_rect()
-        txt_rect3.center = WIDTH/2, 4*HEIGHT/6
-        screen.blit(rend_txt3, txt_rect3)
-    
+            self.tmr = 0
+        if self.tmr > 30:
+            if self.index < self.txt_len:
+                self.index += 1
+            rend_txt3 = self.font2.render(self.txt3[:self.index], True, (255, 255, 255))
+            txt_rect3  = rend_txt3.get_rect()
+            txt_rect3.center = WIDTH/2, 4*HEIGHT/6
+            screen.blit(rend_txt3, txt_rect3)
+        self.tmr += 1
 
+
+class BreakHeart:
+    """
+    ゲームオーバー時にハートを壊すことに関するクラス
+    """
+    himg = pg.transform.rotozoom(
+        pg.image.load("fig/Undertale_hurt.png"), 
+        0, 0.02
+        ) 
+    bimg = pg.transform.rotozoom(
+        pg.image.load("fig/Undertale_breakhurt.png"), 
+        0, 0.02
+        ) 
+    def __init__(self, x:int, y:int):
+        """
+        """
+        self.himg = __class__.himg
+        self.bimg = __class__.bimg
+        self.rect1: pg.Rect = self.himg.get_rect()
+        self.rect2: pg.Rect = self.bimg.get_rect()
+        self.rect1.center = (x, y)
+        self.rect2.center = (x, y)
+
+        self.tmr = 0
+    
+    def update(self, screen: pg.Surface, reset=False):
+        """
+        """
+        if reset:
+            self.tmr = 0
+        if self.tmr < 20:
+            screen.blit(self.himg, self.rect1)
+        elif 20 <= self.tmr:
+            screen.blit(self.bimg, self.rect2)
+        self.tmr += 1
+
+    
 def main():
     pg.display.set_caption("koukAtale")
     screen = pg.display.set_mode((WIDTH, HEIGHT))   
@@ -537,14 +577,10 @@ def main():
                 attack_tmr = 0
                 pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
                 kkton.update(screen)
-
                 dialog.update(screen)
-
                 hp.draw(screen)
                 hp.update()
-
                 choice.draw(screen)
-
                 select_tmr += 1
 
             elif gameschange == 1:  # こうげきを選択した場合
@@ -590,10 +626,11 @@ def main():
                     if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
                         hp.hp -= 1
 
+                # gameover判定
                 if hp.hp <= 0:
                     sound.stop()
-                    sound = pg.mixer.Sound("./sound/gameover.mp3")
-                    sound.play(-1)
+                    # brea
+                    breakheart = BreakHeart(heart.rect.x, heart.rect.y)
                     scenechange = 2
 
                 # こうかとんの表示
@@ -623,12 +660,29 @@ def main():
                 attack_tmr += 1
         
         # GameOver 
-        elif scenechange == 2:            
-            if gameover_tmr > 500:
-                return
-            gameov.update(screen)
-            pg.display.update()
+        elif scenechange == 2: 
+            if gameover_tmr < 50:
+                # heart.update(key_lst, screen)
+                breakheart.update(screen)
+            elif gameover_tmr == 50:
+                sound = pg.mixer.Sound("./sound/gameover.mp3")
+                sound.play(-1)
+            elif 50 < gameover_tmr <= 400:
+                gameov.update(screen)
+            elif gameover_tmr > 400:
+                sound.stop()
+                heart = Heart((WIDTH/2, HEIGHT/2+100))
+                beams.update(screen, True)
+                barrages.update(True)
+                hp =HealthBar(WIDTH/4, 5*HEIGHT/6, max_hp+4, max_hp, gpa)
+                gameover_tmr = 0
+                gameov.update(screen, True)
+                sound = pg.mixer.Sound("./sound/Megalovania.mp3")
+                sound.play(-1)
+                gameschange = 0
+                scenechange = 1
             gameover_tmr += 1
+            
 
         # elif gameschange == 4:
         pg.display.update()
