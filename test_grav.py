@@ -13,6 +13,9 @@ FONT_F = "font/JF-Dot-MPlusS10B.ttf"  # ドット文字太目
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+#重力の大きさ。ジャンプした時に落ちる力。
+GRAVITY = 0.75
+
 # プレイヤーの進行方向のフラグ
 moving_left = False
 moving_right = False
@@ -160,8 +163,7 @@ class HurtGrav(pg.sprite.Sprite):
         0, 0.02
         )
 
-    GRAVITY = 10
-    dx = 0
+    dx = 0  # x軸方向の移動量
     dy = 0
     
     def __init__(self, xy: tuple[int, int]):
@@ -173,76 +175,71 @@ class HurtGrav(pg.sprite.Sprite):
         self.image = __class__.img
         self.rect: pg.Rect = self.image.get_rect()
         self.rect.center = xy
-        self.dx = 0  # x座標の変化量
-        self.dy = 0  # y座標の変化量
 
-        self.arive = True
-        self.speed = 5
-        self.action = 0
+		# heartの移動スピードを代入
+        self.speed = +5.0
+		# Y軸方向の速度
+        self.vel_y = 0
+		# ジャンプのフラグ
         self.jump = False
-        self.in_air = False
-
-
+		# 空中にいるかどうかのフラグ
+        self.in_air = True
 
     def update(self, moving_left, moving_right, screen: pg.Surface):
         """
         押下キーに応じてハートを移動させる
-        引数1 key_lst：押下キーの真理値リスト
-        引数2 screen：画面Surface
-        """
-        # d_move_dy = 0.06
-        # if key_lst[pg.K_LEFT]:
-        #     self.dx = -__class__.move_dx
-        #     sum_mv = [self.dx, self.dy]
-        # elif key_lst[pg.K_RIGHT]:
-        #     self.dx = __class__.move_dx
-        #     sum_mv = [self.dx, self.dy]
-        # else:
-        #     self.dx = 0
-        # for event in pg.event.get():
-        #     if event.type == KEYDOWN and event.key == pg.K_UP:
-        #         self.dy = __class__.jamp_dy
-        #         sum_mv = [self.dx, self.dy]
-        #     if self.dy > __class__.jamp_dy:
-        #         self.dy -= d_move_dy
-        
-        __class__.dx = 0
-        __class__.dy = 0
+		引数1 moving_left：左移動フラグ
+		引数2 moving_right：右移動フラグ
+        引数3 screen：画面Surface
+		"""
+		# 移動量をリセット。dx,dyと表記しているのは微小な移動量を表すため。微分、積分で使うdx,dy。
+        dx = 0
+        dy = 0
 
+		# 左に移動
         if moving_left:
-            __class__.dx = -self.speed
+			# スピードの分だけ移動。座標系において左は負の方向
+            dx = -self.speed
+
+		# 右に移動
         if moving_right:
-            __class__.dx = self.speed
+			# スピードの分だけ移動。座標系において左は負の方向
+            dx = self.speed
 
+		#ジャンプ
+		# ジャンプ中かつ空中フラグはまだFalse
         if self.jump == True and self.in_air == False:
-            print("T")
-            self.dy = -5
+			# Y軸方向の速度
+            self.vel_y = -11
+			# ジャンプのフラグを更新
             self.jump = False
+			# 空中フラグを更新
             self.in_air = True
-        if self.jump == True:
-            self.dy += __class__.GRAVITY 
 
-        if self.dy > 11:
-            self.dy = 0
+		# 重力を適用。Y軸方向の速度に重力を加える。この重力は重力速度である。単位時間あたりの速度と考えるので力をそのまま速度に足して良い。
 
-        if self.jump == False:
-            self.dy -= __class__.GRAVITY
+        self.vel_y += GRAVITY
+		# Y軸方向の速度が一定以上なら
+        if self.vel_y > 10:
+			# 速さはゼロになる
+            self.vel_y
+		# Y軸方向の微小な移動距離を更新.単位時間なので距離に速度を足すことができる
+        dy += self.vel_y
 
-        __class__.dy += self.dy
+        self.rect.move_ip([dx, dy])
+
+        # 床との衝突判定
+        if self.rect.bottom + dy > (HEIGHT/2-50)+300-5:
+            dy = (HEIGHT/2-50)+300-5 - self.rect.bottom
+			# 空中フラグを更新
+            self.in_air = False
+            self.rect.move_ip([0, dy])
         
-        self.rect.move_ip([__class__.dx, __class__.dy])
-        if check_bound3(self.rect) != (True, True):
-            print(self.rect)
-            # print("T")
-            print(self.jump)
-            __class__.dx = -__class__.dx
-            __class__.dy = -__class__.dy 
-            self.in_air = True
-            self.rect.move_ip([__class__.dx, __class__.dy])
-        # if not (__class__.dx == 0 and __class__.dy == 0):
-        #     self.image = __class__.img
-        # if sum_mv != [0, 0]:
-        #     self.dire = sum_mv
+        # 壁との衝突判定
+        if self.rect.left < WIDTH/2-150+5 or WIDTH/2+150-5 < self.rect.right:  # 横判定
+            dx = -dx
+            self.rect.move_ip([dx, 0])
+        
         screen.blit(self.image, self.rect)
 
 
@@ -479,7 +476,7 @@ def main():
 
     # ハートの初期化
     # hurt = Hurt((WIDTH/2, HEIGHT/2+100))
-    hurt = HurtGrav((WIDTH/2, HEIGHT/2+229))
+    hurt = HurtGrav((WIDTH/2, HEIGHT/2+100))
 
     # こうかとんビーム（仮）の初期化
     beams = pg.sprite.Group()
@@ -668,7 +665,7 @@ def main():
                 dialog.update(screen, reset=True)
                 # 初期化
                 # hurt = Hurt((WIDTH/2, HEIGHT/2+100))
-                hurt = HurtGrav((WIDTH/2, HEIGHT/2+230))
+                hurt = HurtGrav((WIDTH/2, HEIGHT/2+100))
 
                 beams.update(screen, True)
                 gameschange = 0
