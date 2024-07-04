@@ -153,12 +153,6 @@ class HeartGrav(pg.sprite.Sprite):
     """
     プレイヤー（ハート）に関するクラス
     """
-    delta = {  # 押下キーと移動量の辞書
-        pg.K_UP: (0, -5),
-        pg.K_DOWN: (0, +5),
-        pg.K_LEFT: (-5, 0),
-        pg.K_RIGHT: (+5, 0),
-    }
     img = pg.transform.rotozoom(
         pg.image.load("fig/Undertale_hurt.png"), 
         0, 0.02
@@ -627,9 +621,9 @@ def main():
     # こうかとんの初期化
     kkton = Koukaton()
     # ハートの初期化
-    # heart = Heart((WIDTH/2, HEIGHT/2+100 ))
+    heart = Heart((WIDTH/2, HEIGHT/2+100 ))
     # 重力ハートの初期化
-    heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
+    # heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
     # 落単ビームの初期化
     beams = pg.sprite.Group()
     # 弾幕の初期化
@@ -758,61 +752,6 @@ def main():
                 # 選択肢の表示
                 choice.draw(screen)
 
-            # elif gameschange == 3:  # 攻撃画面
-            #     pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
-            #     if attack_rand == 0:
-            #         # 落単ビームの発生
-            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
-            #             start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
-            #             beams.add(AttackBeam((255, 255, 255), start_pos))
-            #         # 落単との衝突判定
-            #         if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
-            #             if heart.invincible == False:
-            #                 hp.hp -= 1
-            #                 heart.invincible = True
-            #     elif attack_rand == 1:
-            #         # 弾幕の発生
-            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
-            #             for ang in set_barrages.gen_barrage():
-            #                 barrages.add(AttackBarrage(kkton, heart, ang))
-            #         if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
-            #             if heart.invincible == False:
-            #                 hp.hp -= 1
-            #                 heart.invincible = True
-
-            #     # gameover判定
-            #     if hp.hp <= 0:
-            #         sound.stop()
-            #         # brea
-            #         breakheart = BreakHeart(heart.rect.x, heart.rect.y)
-            #         scenechange = 2
-
-            #     # こうかとんの表示
-            #     kkton.update(screen)
-            #     # キーに応じたハートの移動
-            #     key_lst = pg.key.get_pressed()
-            #     heart.update(key_lst, screen)
-            #     # 攻撃終了判定
-            #     if attack_tmr > 300: # 選択画面に戻る
-            #         dialog.update(screen, True)
-            #         # 初期化
-            #         heart = Heart((WIDTH/2, HEIGHT/2+100))
-            #         beams.update(screen, True)
-            #         barrages.update(True)
-            #         gameschange = 0
-            #     # 落単の表示
-            #     beams.update(screen) 
-            #     # 弾幕の表示と更新
-            #     barrages.update()
-            #     barrages.draw(screen)
-            #     set_barrages.update()
-            #     # HPの表示と更新
-            #     hp.draw(screen)
-            #     hp.update()
-            #     # 選択肢の表示
-            #     choice.draw(screen, True)
-            #     attack_tmr += 1
-
             elif gameschange == 3:  # 攻撃画面
                 pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
                 if attack_rand == 0:
@@ -845,12 +784,13 @@ def main():
                 # こうかとんの表示
                 kkton.update(screen)
                 # キーに応じたハートの移動
-                heart.update(moving_left, moving_right, screen)
+                key_lst = pg.key.get_pressed()
+                heart.update(key_lst, screen)
                 # 攻撃終了判定
                 if attack_tmr > 300: # 選択画面に戻る
                     dialog.update(screen, True)
                     # 初期化
-                    heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
+                    heart = Heart((WIDTH/2, HEIGHT/2+100))
                     beams.update(screen, True)
                     barrages.update(True)
                     gameschange = 0
@@ -866,6 +806,60 @@ def main():
                 # 選択肢の表示
                 choice.draw(screen, True)
                 attack_tmr += 1
+
+            # elif gameschange == 3:  # 攻撃画面
+            #     pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
+            #     if attack_rand == 0:
+            #         # 落単ビームの発生
+            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+            #             start_pos = (random.randint(WIDTH/2-100,WIDTH/2+100), 40)
+            #             beams.add(AttackBeam((255, 255, 255), start_pos))
+            #         # 落単との衝突判定
+            #         if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
+            #             if heart.invincible == False:
+            #                 hp.hp -= 1
+            #                 heart.invincible = True
+            #     elif attack_rand == 1:
+            #         # 弾幕の発生
+            #         if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
+            #             for ang in set_barrages.gen_barrage():
+            #                 barrages.add(AttackBarrage(kkton, heart, ang))
+            #         if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
+            #             if heart.invincible == False:
+            #                 hp.hp -= 1
+            #                 heart.invincible = True
+
+            #     # gameover判定
+            #     if hp.hp <= 0:
+            #         sound.stop()
+            #         # brea
+            #         breakheart = BreakHeart(heart.rect.x, heart.rect.y)
+            #         scenechange = 2
+
+            #     # こうかとんの表示
+            #     kkton.update(screen)
+            #     # キーに応じたハートの移動
+            #     heart.update(moving_left, moving_right, screen)
+            #     # 攻撃終了判定
+            #     if attack_tmr > 300: # 選択画面に戻る
+            #         dialog.update(screen, True)
+            #         # 初期化
+            #         # heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
+            #         beams.update(screen, True)
+            #         barrages.update(True)
+            #         gameschange = 0
+            #     # 落単の表示
+            #     beams.update(screen) 
+            #     # 弾幕の表示と更新
+            #     barrages.update()
+            #     barrages.draw(screen)
+            #     set_barrages.update()
+            #     # HPの表示と更新
+            #     hp.draw(screen)
+            #     hp.update()
+            #     # 選択肢の表示
+            #     choice.draw(screen, True)
+            #     attack_tmr += 1
         
         # GameOver 
         elif scenechange == 2: 
