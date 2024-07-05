@@ -425,6 +425,8 @@ class Choice(pg.sprite.Sprite):
         self.whle = 50  # 四角形との間の距離 
         self.width = (WIDTH - (self.whle*(len(ls)-1)) - 20)/len(ls)
         self.height = 70
+
+        self.switch_voice = pg.mixer.Sound("./voice/switch_select.wav")
         
     def draw(self, screen: pg.Surface, atk = False):
         """
@@ -457,8 +459,10 @@ class Choice(pg.sprite.Sprite):
         """
         if key == pg.K_LEFT:
             self.index = (self.index - 1) % len(self.choice_ls)  # 右端から左端へ
+            self.switch_voice.play(0)
         elif key == pg.K_RIGHT:
             self.index = (self.index + 1) % len(self.choice_ls)  # 左端から右端へ
+            self.switch_voice.play(0)
 
 
 class AfterChoice:
@@ -585,6 +589,8 @@ class BreakHeart:
         ) 
     def __init__(self, x:int, y:int):
         """
+        引数1 x：ハートの最終座標x
+        引数2 y：ハートの最終座標y
         """
         self.himg = __class__.himg
         self.bimg = __class__.bimg
@@ -593,16 +599,22 @@ class BreakHeart:
         self.rect1.center = (x, y)
         self.rect2.center = (x, y)
 
+        self.break_heart = pg.mixer.Sound("./voice/break_heart.wav")
+
         self.tmr = 0
     
     def update(self, screen: pg.Surface, reset=False):
         """
+        引数1 screnn：画面Surface
+        引数2 reset：れセット判定
         """
         if reset:
             self.tmr = 0
         if self.tmr < 20:
             screen.blit(self.himg, self.rect1)
-        elif 20 <= self.tmr:
+        elif 20 == self.tmr:
+            self.break_heart.play(0)
+        elif 20 < self.tmr:
             screen.blit(self.bimg, self.rect2)
         self.tmr += 1
 
@@ -726,6 +738,12 @@ def main():
 
             elif gameschange == 3:  # 攻撃画面
                 pg.draw.rect(screen,(255,255,255), Rect(WIDTH/2-150, HEIGHT/2-50, 300, 300), 5)
+                # gameover判定
+                if hp.hp <= 0:
+                    sound.stop()
+                    breakheart = BreakHeart(heart.rect.x, heart.rect.y)
+                    scenechange = 2
+
                 if attack_rand == 0:
                     # 落単ビームの発生
                     if attack_tmr % 9 == 0:  # 一定時間ごとにビームを生成
@@ -734,7 +752,10 @@ def main():
                     # 落単との衝突判定
                     if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
                         if heart.invincible == False:
-                            hp.hp -= 1
+                            if hp.hp < 3:
+                                hp.hp = 0
+                            else:
+                                hp.hp -= 3
                             heart.invincible = True
                 elif attack_rand == 1:
                     # 弾幕の発生
@@ -745,13 +766,6 @@ def main():
                         if heart.invincible == False:
                             hp.hp -= 1
                             heart.invincible = True
-
-                # gameover判定
-                if hp.hp <= 0:
-                    sound.stop()
-                    # brea
-                    breakheart = BreakHeart(heart.rect.x, heart.rect.y)
-                    scenechange = 2
 
                 # こうかとんの表示
                 kkton.update(screen)
