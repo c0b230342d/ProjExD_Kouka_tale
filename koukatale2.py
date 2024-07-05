@@ -621,7 +621,7 @@ def main():
     # こうかとんの初期化
     kkton = Koukaton()
     # ハートの初期化
-    heart = Heart((WIDTH/2, HEIGHT/2+100 ))
+    heart = Heart((WIDTH/2, HEIGHT/2+100))
     # 重力ハートの初期化
     # heart = HeartGrav((WIDTH/2, HEIGHT/2+100))
     # 落単ビームの初期化
@@ -652,8 +652,8 @@ def main():
     gameover_tmr = 0  # gameover中のタイマー
 
     # プレイヤーの進行方向のフラグ
-    moving_left = False
-    moving_right = False
+    # moving_left = False
+    # moving_right = False
 
     pygame.mixer.init()
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
@@ -693,24 +693,24 @@ def main():
                         attack_rand = random.randint(0, 1)
                         gameschange = 3
 
-                if event.key == pygame.K_LEFT:
-                    # 左移動フラグをTrue
-                    moving_left = True
-                if event.key == pygame.K_RIGHT:
-                    # 右移動フラグをTrue
-                    moving_right = True
-                # wキーを押す、かつ、プレイヤーが生きている
-                if event.key == pygame.K_UP:
-                    # ジャンプフラグをTrue
-                    heart.jump = True
+            #     if event.key == pygame.K_LEFT:
+            #         # 左移動フラグをTrue
+            #         moving_left = True
+            #     if event.key == pygame.K_RIGHT:
+            #         # 右移動フラグをTrue
+            #         moving_right = True
+            #     # wキーを押す、かつ、プレイヤーが生きている
+            #     if event.key == pygame.K_UP:
+            #         # ジャンプフラグをTrue
+            #         heart.jump = True
 
-            elif event.type == pg.KEYUP:
-                if event.key == pg.K_LEFT:
-                    # 左移動フラグをTrue
-                    moving_left = False
-                if event.key == pg.K_RIGHT:
-                    # 右移動フラグをTrue
-                    moving_right = False
+            # elif event.type == pg.KEYUP:
+            #     if event.key == pg.K_LEFT:
+            #         # 左移動フラグをTrue
+            #         moving_left = False
+            #     if event.key == pg.K_RIGHT:
+            #         # 右移動フラグをTrue
+            #         moving_right = False
         
         # 背景関連
         screen.fill((0,0,0))
@@ -762,7 +762,7 @@ def main():
                     # 落単との衝突判定
                     if len(pg.sprite.spritecollide(heart, beams, False)) != 0:
                         if heart.invincible == False:
-                            hp.hp -= 1
+                            hp.hp -= 5
                             heart.invincible = True
                 elif attack_rand == 1:
                     # 弾幕の発生
@@ -771,7 +771,7 @@ def main():
                             barrages.add(AttackBarrage(kkton, heart, ang))
                     if len(pg.sprite.spritecollide(heart,barrages,False)) != 0:
                         if heart.invincible == False:
-                            hp.hp -= 1
+                            hp.hp -= 2
                             heart.invincible = True
 
                 # gameover判定
