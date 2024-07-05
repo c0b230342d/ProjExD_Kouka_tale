@@ -26,7 +26,6 @@ def check_bound1(obj_rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
-
 def check_bound2(obj_rct:pg.Rect) -> tuple[bool, bool]:
     """
     引数:ハートRect
@@ -317,6 +316,7 @@ class AttackBarrage(pg.sprite.Sprite):
         if check_bound1(self.rect) != (True, True) or reset:
             self.kill()
 
+
 class SettingBarrage(pg.sprite.Sprite):
     """
     弾幕生成に関するクラス
@@ -490,6 +490,52 @@ class AfterChoice:
                 self.y += 60
 
 
+class AfterChoice_Aciton(pg.sprite.Sprite):
+    """
+    選択肢を選んだあとのこうどう画面に関するクラス
+    """
+    def __init__(self, lst: list[str]):
+        """
+        引数1 lst：選択肢のリスト
+        """
+        self.x = 40
+        self.y = HEIGHT/2-20
+
+        self.font = pg.font.Font(FONT, 35)
+        self.txt_lst = lst
+
+        self.index = 0
+
+    def draw(self, screen: pg.Surface, atk=False):
+        for i, choice in enumerate(self.txt_lst):
+            if atk:
+                color = (248, 138, 52)
+            elif i == self.index:
+                color = (255, 255, 0)
+            else:
+                color = (248, 138, 52)
+            rend_txt = self.font.render(choice, True, color)
+            screen.blit(rend_txt, (self.x, self.y))
+            if i % 2 == 0:
+                self.x = WIDTH/2 + 40
+            else:
+                self.x = 40
+                self.y += 60
+
+    def update(self, key):
+        """
+        キー入力による選択肢の変更
+        引数1 key：押されたキーの識別
+        """
+        if key == pg.K_LEFT:
+            self.index = (self.index - 1) % len(self.choice_lst)  # 右端から左端へ
+            self.switch_voice.play(0)
+        elif key == pg.K_RIGHT:
+            self.index = (self.index + 1) % len(self.choice_lst)  # 左端から右端へ
+            self.switch_voice.play(0)
+    
+
+
 class AttackBar:
     """
     敵を攻撃するアタックバーに関する関数
@@ -650,6 +696,10 @@ def main():
     choice = Choice(choice_ls, 10, HEIGHT - 80)
     # アタックバーの初期化
     attack_bar = AttackBar()
+    afterchoice_action = AfterChoice_Aciton(["＊　こうかとん", 
+                                                         "＊　こうかとん", 
+                                                         "＊　こうかとん", 
+                                                         "＊　こうかとん",])
     # GameOverの初期化
     gameov = GameOver(random.randint(0, 3))
     clock = pg.time.Clock()  # time
@@ -677,6 +727,8 @@ def main():
                             select_voice.play(0)
                             gameschange = 1
                         elif choice.index == 1:  # こうどうを選択していたら
+                            select_voice.play(0)
+                            gameschange = 4
                             pass
                         elif choice.index == 2:  # アイテムを選択していたら
                             pass
@@ -695,6 +747,8 @@ def main():
                         attack_voice.play(0)
                         attack_rand = random.randint(0, 1)
                         gameschange = 3
+                elif gameschange == 4:
+                    afterchoice_action.update(event.key)
         
         # 背景関連
         screen.fill((0,0,0))
@@ -792,6 +846,22 @@ def main():
                 # 選択肢の表示
                 choice.draw(screen, True)
                 attack_tmr += 1
+
+            elif gameschange == 4:  # こうげきを選択した場合
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice_action = AfterChoice_Aciton(["＊　こうかとん", 
+                                                         "＊　こうかとん", 
+                                                         "＊　こうかとん", 
+                                                         "＊　こうかとん",])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice_action.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
 
         # GameOver 
         elif scenechange == 2: 
