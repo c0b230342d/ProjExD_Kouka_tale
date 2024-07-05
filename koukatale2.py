@@ -208,10 +208,8 @@ class HeartGrav(pg.sprite.Sprite):
             self.vel_y = -11
 			# 空中フラグを更新
             self.in_air = True
-
-
+            
 		# 重力を適用。Y軸方向の速度に重力を加える。この重力は重力速度である。単位時間あたりの速度と考えるので力をそのまま速度に足して良い。
-
         self.vel_y += GRAVITY
 		# Y軸方向の速度が一定以上なら
         if self.vel_y > 10:
