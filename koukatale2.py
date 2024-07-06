@@ -26,7 +26,6 @@ def check_bound1(obj_rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
-
 def check_bound2(obj_rct:pg.Rect) -> tuple[bool, bool]:
     """
     引数:ハートRect
@@ -50,9 +49,9 @@ def check_bound(obj_rct:pg.Rect, left:int, right:int, top:int, bottom:int) -> tu
     引数5 bottom:下の座標
     """
     yoko, tate = True, True
-    if obj_rct.left < left or right < obj_rct.right:
+    if obj_rct.left <= left or right <= obj_rct.right:
         yoko = False
-    if obj_rct.top < top or bottom < obj_rct.bottom:
+    if obj_rct.top <= top or bottom <= obj_rct.bottom:
         tate = False
     return yoko, tate
 
@@ -315,6 +314,7 @@ class AttackBarrage(pg.sprite.Sprite):
         if check_bound1(self.rect) != (True, True) or reset:
             self.kill()
 
+
 class SettingBarrage(pg.sprite.Sprite):
     """
     弾幕生成に関するクラス
@@ -373,6 +373,52 @@ class HealthBar(pg.sprite.Sprite):
         # 現在のHPと最大HPの表示
         hp_text = self.font.render(f" {self.hp}/{self.max}", True, (255, 255, 255))
         screen.blit(hp_text, (self.x + self.width + 10 + self.label.get_width(), self.y))
+
+class EnemyHealthBar(pg.sprite.Sprite):
+    """
+    敵の体力に関するクラス
+    """
+    def __init__(self, x: int, y: int, width: int, max: int):
+        """
+        引数1 x：表示するx座標
+        引数2 y：表示するy座標
+        引数3 width：体力ゲージの幅
+        引数4 max：体力の最大値
+        """
+        super().__init__()
+        self.width = width//20+4
+        self.x = x - self.width/2
+        self.y = y
+        self.max = max//20 # 最大HP
+        self.hp = max # HP
+        self.mark = int((self.width - 4) / self.max) # HPバーの1目盛り
+        
+        self.font1 = pg.font.Font(FONT_F, 40)
+        # 体力ゲージのバー表示の設定
+        self.frame = Rect(self.x , self.y, self.width, 31)
+        self.bar = Rect(self.x, self.y + 2, self.width - 4, 31 - 4)
+        self.value = Rect(self.x, self.y + 2, self.width - 4, 31 - 4)
+
+    def update(self):
+        """
+        HPに対応したヘルスバーの更新
+        """
+        self.value.width = (self.hp//20) * self.mark
+
+    def draw(self, screen: pg.Surface, dmg: int):
+        """
+        ヘルスバーとダメージの表示
+        引数1 screen：画面Surface
+        引数2 dmg：ダメージ量
+        """
+        pg.draw.rect(screen, (0, 0, 0), self.frame)
+        pg.draw.rect(screen, (100, 100, 100), self.bar)
+        pg.draw.rect(screen, (0, 255, 0), self.value)
+        label1 = self.font1.render(f"{dmg}", True, (0, 0, 0), (255, 0, 0))
+        rect1 = label1.get_rect()
+        rect1.center = WIDTH/2-50, self.y - 50
+        screen.blit(label1, rect1.center)
+
 
 
 class Dialogue(pg.sprite.Sprite):
@@ -496,34 +542,51 @@ class AttackBar:
         pg.image.load("fig/Attack_Bar.png"),
         0,1.8
     )
-    def __init__(self):
+    def __init__(self, screen_width, screen_height):
         """
         アタックバーの初期化
+        引数1 screen_width：行動範囲の横サイズ
+        引数2 screen_height：行動範囲の縦サイズ
         """
         # アタックの確率バーの描画
-        self.vx, self.vy = +40, 0
-        self.rimg = pg.Surface((10, 300), pg.SRCALPHA)
-        pg.draw.rect(self.rimg, (255, 255, 255), (0, 0, 20, 300))
-        self.rrct = self.rimg.get_rect()
-        self.rrct.center = (20, HEIGHT/2+100)
+        self.rect = pygame.Rect(15, HEIGHT/2-45, 20, 290)
+        self.speed = 35 # 35 # 70
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.moving_right = True
+        self.moving = True
 
         # アタックバーの描画
         self.img = __class__.img
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = WIDTH/2, HEIGHT/2+100
 
-    def update(self, screen: pg.Surface):
+    def move(self):
         """
-        アタックバーを表示
-        引数1 screen：画面Surface
+        アタックバーの移動について
+        """
+        if self.moving:
+            if self.moving_right:
+                self.rect.x += self.speed
+            else:
+                self.rect.x -= self.speed
+
+        yoko, tate = check_bound(self.rect, 15, self.screen_width, 0, self.screen_height)
+        if not yoko:
+                self.moving_right = not self.moving_right
+
+    def draw(self, screen: pg.Surface):
+        """
+        アタックバーを描画する
         """
         screen.blit(self.img, self.rct)
+        pg.draw.rect(screen, (255, 255, 255), self.rect)
 
-        yoko, tate = check_bound(self.rrct, 15, WIDTH-15, HEIGHT/2-55, HEIGHT/2+255)
-        if not yoko:
-            self.vx *= -1
-        self.rrct.move_ip(self.vx, self.vy)
-        screen.blit(self.rimg, self.rrct)
+    def stop(self):
+        """
+        アタックバーを止める
+        """
+        self.moving = not self.moving
 
 
 class GameOver:
@@ -637,9 +700,12 @@ def main():
     # セリフに関する初期化
     dialog = Dialogue()
     # ヘルスバーに関する初期化
-    gpa = random.uniform(1, 4)
+    gpa = random.uniform(2, 4)
     max_hp = int(gpa*20)
     hp =HealthBar(WIDTH/4, 5*HEIGHT/6, max_hp+4, max_hp, gpa) # maxの値はwidth-4を割り切れる数にする
+    # 敵のヘルスバーに関する初期化
+    en_max_hp = 7957
+    en_hp = EnemyHealthBar(WIDTH/2, HEIGHT/3, en_max_hp, en_max_hp)
     # 選択肢の初期化
     choice_ls = ["たたかう", 
                  "こうどう", 
@@ -647,7 +713,7 @@ def main():
                  "みのがす"]
     choice = Choice(choice_ls, 10, HEIGHT - 80)
     # アタックバーの初期化
-    attack_bar = AttackBar()
+    attack_bar = AttackBar(WIDTH-15, 300-(HEIGHT/2-50))
     # GameOverの初期化
     gameov = GameOver(random.randint(0, 3))
     clock = pg.time.Clock()  # time
@@ -655,6 +721,7 @@ def main():
     attack_tmr = 0  # 攻撃中のタイマーの初期値
     attack_rand = 0
     gameover_tmr = 0  # gameover中のタイマー
+    atk = False  # 攻撃してるか
 
     pygame.mixer.init()
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
@@ -690,9 +757,7 @@ def main():
                 # アタックバーなら
                 elif gameschange == 2:
                     if event.key == pg.K_RETURN:
-                        attack_voice.play(0)
-                        attack_rand = random.randint(0, 1)
-                        gameschange = 3
+                        atk = True           
         
         # 背景関連
         screen.fill((0,0,0))
@@ -705,9 +770,7 @@ def main():
                 kkton.update(screen)
                 dialog.update(screen)
                 hp.draw(screen)
-                hp.update()
                 choice.draw(screen)
-                select_tmr += 1
 
             elif gameschange == 1:  # こうげきを選択した場合
                 pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
@@ -718,7 +781,6 @@ def main():
                 afterchoice.draw(screen)
                 # 体力バーの更新
                 hp.draw(screen)
-                hp.update()
                 # 選択肢の更新
                 choice.draw(screen)
 
@@ -727,10 +789,27 @@ def main():
                 # こうかとんの表示
                 kkton.update(screen)
                 # アタックバーの表示
-                attack_bar.update(screen)
+                if atk:
+                    attack_bar.stop()
+                    if select_tmr == 0:
+                        attack_voice.play(0)
+                    if select_tmr == 3:
+                        atk_value = 500 - int(abs((WIDTH/2-attack_bar.rect.centerx)/1.5))
+                        en_hp.hp -= atk_value
+                    elif 3 < select_tmr < 30:
+                        en_hp.draw(screen, atk_value)
+                        en_hp.update()
+                    elif 30 < select_tmr:
+                        atk = False
+                        attack_bar.vx = +1
+                        attack_rand = random.randint(0, 1)
+                        gameschange = 3
+                    select_tmr += 1
+                else:
+                    attack_bar.move()
+                attack_bar.draw(screen)
                 # hpの表示
                 hp.draw(screen)
-                hp.update()
                 # 選択肢の表示
                 choice.draw(screen)
 
@@ -777,6 +856,7 @@ def main():
                     heart = Heart((WIDTH/2, HEIGHT/2+100))
                     beams.update(screen, True)
                     barrages.update(True)
+                    select_tmr = 0
                     gameschange = 0
                 # 落単の表示
                 beams.update(screen) 
@@ -807,7 +887,9 @@ def main():
                 beams.update(screen, True)
                 barrages.update(True)
                 hp =HealthBar(WIDTH/4, 5*HEIGHT/6, max_hp+4, max_hp, gpa)
+                en_hp = EnemyHealthBar(WIDTH/2, HEIGHT/3, en_max_hp, en_max_hp)
                 gameover_tmr = 0
+                select_tmr = 0
                 gameov.update(screen, True)
                 sound = pg.mixer.Sound("./sound/Megalovania.mp3")
                 sound.play(-1)
