@@ -374,6 +374,7 @@ class HealthBar(pg.sprite.Sprite):
         hp_text = self.font.render(f" {self.hp}/{self.max}", True, (255, 255, 255))
         screen.blit(hp_text, (self.x + self.width + 10 + self.label.get_width(), self.y))
 
+
 class EnemyHealthBar(pg.sprite.Sprite):
     """
     敵の体力に関するクラス
@@ -418,7 +419,6 @@ class EnemyHealthBar(pg.sprite.Sprite):
         rect1 = label1.get_rect()
         rect1.center = WIDTH/2-50, self.y - 50
         screen.blit(label1, rect1.center)
-
 
 
 class Dialogue(pg.sprite.Sprite):
