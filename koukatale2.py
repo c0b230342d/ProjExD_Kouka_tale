@@ -679,12 +679,70 @@ class BreakHeart:
             screen.blit(self.bimg, self.rect2)
         self.tmr += 1
 
-    
+
+class GameTitle:
+    """
+    ゲームタイトルを表示するためのクラス
+    """
+    img = pg.transform.rotozoom(
+        pg.image.load("fig/KoukAtale_Title.png"), 
+        0, 1
+        ) 
+    def __init__(self):
+        """
+        引数なし
+        """
+        # タイトル画像
+        self.img = __class__.img
+        self.rect = self.img.get_rect()
+        self.rect.center = WIDTH/2, HEIGHT/2
+        # 文字
+        self.font = pg.font.Font(FONT, 40)
+        self.font1 = pg.font.Font(FONT, 50)
+        self.txt = self.font.render("Please press the Enter Key", True, (255, 255, 255))
+        self.txt_rect = self.txt.get_rect()
+        self.txt_rect.center = WIDTH/2, 2*HEIGHT/3
+        self.explan = "---操作説明---\n\n[ENTER]-決定\n[ESC]-戻る\n[方向キー]-移動\n\nHPが0になったらあなたのまけ。"
+        self.ex_rect = pg.Rect(WIDTH/8, HEIGHT/8, 760, 560)
+        self.line_space = 40
+        # サウンド
+        self.titlenoise = pg.mixer.Sound("./voice/intronoise.wav")
+        self.menu = pg.mixer.Sound("./sound/menu1.mp3")
+        # タイマー
+        self.tmr = 0
+        # フラグ
+        self.end_title = 0
+ 
+    def update(self, screen: pg.Surface):
+        """
+        引数1 screen：画面Surface
+        """
+        screen.blit(self.img, self.rect)
+        y = self.ex_rect.top
+        if self.end_title == 0 or self.end_title == 1:
+            if self.tmr == 0:
+                self.titlenoise.play(0)
+            elif self.tmr > 50:
+                screen.blit(self.txt, self.txt_rect)
+                self.end_title = 1
+        elif self.end_title == 2 or self.end_title == 3:
+            if self.tmr == 0:
+                self.menu.play(-1)
+            elif self.tmr > 1:
+                screen.fill((0,0,0))
+                for line in self.explan.splitlines():
+                    image = self.font1.render(line, False, (255, 255, 255))
+                    screen.blit(image, (self.ex_rect.left, y))
+                    y += self.font.size(line)[1] + self.line_space
+                self.end_title = 3
+        self.tmr += 1
+
+
 def main():
     pg.display.set_caption("koukAtale")
     screen = pg.display.set_mode((WIDTH, HEIGHT))   
     # シーン状態の推移
-    scenechange = 1  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
+    scenechange = 0  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
     gameschange = 0  # 0：選択画面, 1：攻撃
     # こうかとんの初期化
     kkton = Koukaton()
@@ -716,6 +774,7 @@ def main():
     attack_bar = AttackBar(WIDTH-15, 300-(HEIGHT/2-50))
     # GameOverの初期化
     gameov = GameOver(random.randint(0, 3))
+    gameti = GameTitle()
     clock = pg.time.Clock()  # time
     select_tmr = 0  # 選択画面時のタイマーの初期値
     attack_tmr = 0  # 攻撃中のタイマーの初期値
@@ -727,42 +786,58 @@ def main():
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
     attack_voice = pg.mixer.Sound("./voice/attack.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
-    sound.play(-1)
+    # sound.play(-1)
+    # title_sound.play(-1)
 
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
             elif event.type == pg.KEYDOWN:
-                # 選択画面なら
-                if gameschange == 0:  
-                    choice.update(event.key)
-                    if event.key == pg.K_RETURN:  # エンターキーを押されたら
-                        if choice.index == 0:  # こうげきを選択していたら
-                            select_voice.play(0)
-                            gameschange = 1
-                        elif choice.index == 1:  # こうどうを選択していたら
-                            pass
-                        elif choice.index == 2:  # アイテムを選択していたら
-                            pass
-                        elif choice.index == 3:  # みのがすを選択していたら
-                            pass
-                # 攻撃相手選択画面なら
-                elif gameschange == 1:      
-                    if event.key == pg.K_ESCAPE:
-                        gameschange = 0
-                    elif event.key == pg.K_RETURN:
-                        select_voice.play(0)
-                        gameschange = 2
-                # アタックバーなら
-                elif gameschange == 2:
+                if scenechange == 0:
+                    # Title画面なら
                     if event.key == pg.K_RETURN:
-                        atk = True           
+                        if gameti.end_title == 1:
+                            gameti.end_title = 2
+                            gameti.tmr = 0
+                        elif gameti.end_title ==3:
+                            scenechange = 1
+                            gameti.menu.stop()
+                            sound.play(-1)
+                elif scenechange == 1:
+                    # 選択画面なら
+                    if gameschange == 0:  
+                        choice.update(event.key)
+                        if event.key == pg.K_RETURN:  # エンターキーを押されたら
+                            if choice.index == 0:  # こうげきを選択していたら
+                                select_voice.play(0)
+                                gameschange = 1
+                            elif choice.index == 1:  # こうどうを選択していたら
+                                pass
+                            elif choice.index == 2:  # アイテムを選択していたら
+                                pass
+                            elif choice.index == 3:  # みのがすを選択していたら
+                                pass
+                    # 攻撃相手選択画面なら
+                    elif gameschange == 1:      
+                        if event.key == pg.K_ESCAPE:
+                            gameschange = 0
+                        elif event.key == pg.K_RETURN:
+                            select_voice.play(0)
+                            gameschange = 2
+                    # アタックバーなら
+                    elif gameschange == 2:
+                        if event.key == pg.K_RETURN:
+                            atk = True           
         
         # 背景関連
         screen.fill((0,0,0))
 
-        if scenechange == 1:  # 攻撃
+        if scenechange == 0:  # タイトル画面
+            gameti.update(screen)
+
+
+        elif scenechange == 1:  # 攻撃
 
             if gameschange == 0:  # 選択画面
                 attack_tmr = 0

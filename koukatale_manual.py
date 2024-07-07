@@ -599,6 +599,66 @@ class BreakHeart:
         elif 20 < self.tmr:
             screen.blit(self.bimg, self.rect2)
         self.tmr += 1
+
+
+class GameTitle:
+    """
+    ゲームタイトルを表示するためのクラス
+    """
+    img = pg.transform.rotozoom(
+        pg.image.load("fig/KoukAtale_Title.png"), 
+        0, 1
+        ) 
+    def __init__(self):
+        """
+        引数なし
+        """
+        # タイトル画像
+        self.img = __class__.img
+        self.rect = self.img.get_rect()
+        self.rect.center = WIDTH/2, HEIGHT/2
+        # 文字
+        self.font = pg.font.Font(FONT, 40)
+        self.font1 = pg.font.Font(FONT, 50)
+        self.txt = self.font.render("Please press the Enter Key", True, (255, 255, 255))
+        self.txt_rect = self.txt.get_rect()
+        self.txt_rect.center = WIDTH/2, 2*HEIGHT/3
+        self.explan = "---操作説明---\n\n[ENTER]-決定\n[ESC]-戻る\n[方向キー]-移動\n\nHPが0になったらあなたのまけ。"
+        self.ex_rect = pg.Rect(WIDTH/8, HEIGHT/8, 760, 560)
+        self.line_space = 40
+        # サウンド
+        self.titlenoise = pg.mixer.Sound("./voice/intronoise.wav")
+        self.menu = pg.mixer.Sound("./sound/menu1.mp3")
+        # タイマー
+        self.tmr = 0
+        # フラグ
+        self.end_title = 0
+
+    def update(self, screen: pg.Surface):
+        """
+        引数1 screen：画面Surface
+        """
+        screen.blit(self.img, self.rect)
+        y = self.ex_rect.top
+        if self.end_title == 0 or self.end_title == 1:
+            if self.tmr == 0:
+                self.titlenoise.play(0)
+            elif self.tmr > 50:
+                screen.blit(self.txt, self.txt_rect)
+                self.end_title = 1
+        elif self.end_title == 2 or self.end_title == 3:
+            if self.tmr == 0:
+                self.menu.play(-1)
+            elif self.tmr > 1:
+                screen.fill((0,0,0))
+                for line in self.explan.splitlines():
+                    image = self.font1.render(line, False, (255, 255, 255))
+                    screen.blit(image, (self.ex_rect.left, y))
+                    y += self.font.size(line)[1] + self.line_space
+                self.end_title = 3
+        self.tmr += 1
+
+        
 """
 以下にこうかとんが攻撃する内容についてのクラスを各自用意する
 """
@@ -609,7 +669,7 @@ def main():
     """
     ゲームのシーンを切り替えるための変数
     """
-    scenechange = 1  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
+    scenechange = 0  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
     gameschange = 0  # 0：選択画面, 1：攻撃
     """
     以下クラスの初期化
@@ -630,6 +690,7 @@ def main():
     choice = Choice(choice_ls, 10, HEIGHT - 80)
     attack_bar = AttackBar(WIDTH-15, 300-(HEIGHT/2-50))
     gameov = GameOver(random.randint(0, 3))
+    gameti = GameTitle()
     # これ以下に攻撃のクラスを初期化する
 
     """
@@ -647,7 +708,6 @@ def main():
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
     attack_voice = pg.mixer.Sound("./voice/attack.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
-    sound.play(-1)
     """
     その他必要な初期化
     """
@@ -665,40 +725,60 @@ def main():
             if event.type == pg.QUIT:
                 return
             elif event.type == pg.KEYDOWN:
-                if gameschange == 0:  
+                if scenechange == 0:
                     """
-                    選択画面での処理
-                    """
-                    choice.update(event.key)
-                    if event.key == pg.K_RETURN:  # エンターキーを押されたら
-                        if choice.index == 0:  # こうげきを選択していたら
-                            select_voice.play(0)
-                            gameschange = 1
-                        elif choice.index == 1:  # こうどうを選択していたら
-                            pass
-                        elif choice.index == 2:  # アイテムを選択していたら
-                            pass
-                        elif choice.index == 3:  # みのがすを選択していたら
-                            pass
-                elif gameschange == 1:  
-                    """
-                    攻撃相手を選択する画面での処理
-                    """    
-                    if event.key == pg.K_ESCAPE:
-                        gameschange = 0
-                    elif event.key == pg.K_RETURN:
-                        select_voice.play(0)
-                        gameschange = 2
-                elif gameschange == 2:
-                    """
-                    アタックバーが表示されている画面での処理
+                    タイトル画面での処理
                     """
                     if event.key == pg.K_RETURN:
-                        atk = True  
+                        if gameti.end_title == 1:
+                            gameti.end_title = 2
+                            gameti.tmr = 0
+                        elif gameti.end_title ==3:
+                            scenechange = 1
+                            gameti.menu.stop()
+                            sound.play(-1)
+                elif scenechange == 1:
+                    """
+                    ゲームをプレイ中での処理
+                    """
+                    if gameschange == 0:  
+                        """
+                        選択画面での処理
+                        """
+                        choice.update(event.key)
+                        if event.key == pg.K_RETURN:  # エンターキーを押されたら
+                            if choice.index == 0:  # こうげきを選択していたら
+                                select_voice.play(0)
+                                gameschange = 1
+                            elif choice.index == 1:  # こうどうを選択していたら
+                                pass
+                            elif choice.index == 2:  # アイテムを選択していたら
+                                pass
+                            elif choice.index == 3:  # みのがすを選択していたら
+                                pass
+                    elif gameschange == 1:  
+                        """
+                        攻撃相手を選択する画面での処理
+                        """    
+                        if event.key == pg.K_ESCAPE:
+                            gameschange = 0
+                        elif event.key == pg.K_RETURN:
+                            select_voice.play(0)
+                            gameschange = 2
+                    elif gameschange == 2:
+                        """
+                        アタックバーが表示されている画面での処理
+                        """
+                        if event.key == pg.K_RETURN:
+                            atk = True  
 
         screen.fill((0,0,0))  # 背景を描画
-
-        if scenechange == 1:
+        if scenechange == 0:
+            """
+            タイトル画面
+            """
+            gameti.update(screen)
+        elif scenechange == 1:
             """
             ゲームプレイシーン
             """
