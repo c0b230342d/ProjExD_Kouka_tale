@@ -480,16 +480,18 @@ class AfterChoice:
         self.font = pg.font.Font(FONT, 35)
         self.txt_ls = ls
 
-    def draw(self, screen: pg.Surface):
+    def draw(self, screen: pg.Surface, action=False):
         for i, choice in enumerate(self.txt_ls):
             rend_txt = self.font.render(choice, True, (255, 255, 255))
             screen.blit(rend_txt, (self.x, self.y))
-            # self.y += 60
-            if i % 2 == 0:
-                self.x = WIDTH/2 + 40
-            else:
-                self.x = 40
+            if action == True:
                 self.y += 60
+            else:
+                if i % 2 == 0:
+                    self.x = WIDTH/2 + 40
+                else:
+                    self.x = 40
+                    self.y += 60
 
 
 class Choice_Aciton(pg.sprite.Sprite):
@@ -1021,7 +1023,7 @@ def main():
                 afterchoice = AfterChoice(["こうかとん:Attack 3 Diffence 100", "この世の支配者"])   
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice.draw(screen)
+                afterchoice.draw(screen, True)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
@@ -1034,7 +1036,7 @@ def main():
                 afterchoice = AfterChoice(["こうかとんは、話を聞いてくれないようだ"])   
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice.draw(screen)
+                afterchoice.draw(screen, True)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
@@ -1047,7 +1049,7 @@ def main():
                 afterchoice = AfterChoice(["こうかとんにそんなことをしてはいけない"])   
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice.draw(screen)
+                afterchoice.draw(screen, True)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
@@ -1060,7 +1062,7 @@ def main():
                 afterchoice = AfterChoice(["こうかとんは聞く耳を持たない"])   
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice.draw(screen)
+                afterchoice.draw(screen, True)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
