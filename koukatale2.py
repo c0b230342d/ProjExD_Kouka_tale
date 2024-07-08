@@ -745,14 +745,16 @@ def main():
                  "アイテム", 
                  "みのがす"]
     choice = Choice(choice_ls, 10, HEIGHT - 80)
-    afterchoice_action = (AfterChoice_Aciton(["＊　こうかとん", 
-                                             "＊　こうかとん", 
-                                             "＊　こうかとん", 
-                                             "＊　こうかとん",]))
-    afterchoice_item = (AfterChoice_Item(["＊　こうかとん", 
-                                             "＊　こうかとん", 
-                                             "＊　こうかとん", 
-                                             "＊　こうかとん",]))
+    afterchoice_action_lst = ["＊　こうかとんを分析", 
+                                             "＊　こうかとんと話す", 
+                                             "＊　こうかとんを焼く", 
+                                             "＊　こうかとんを説得する",]
+    afterchoice_action = (AfterChoice_Aciton(afterchoice_action_lst))
+    afterchoice_item_lst = ["＊　こうかとんエキス", 
+                                "＊　こうかとんジュース", 
+                                "＊　こうかとんエナジー", 
+                                "＊　こうかとんドリンク",]
+    afterchoice_item = (AfterChoice_Item(afterchoice_item_lst))
     # アタックバーの初期化
     attack_bar = AttackBar()
     # GameOverの初期化
@@ -786,7 +788,10 @@ def main():
                             gameschange = 4
                         elif choice.index == 2:  # アイテムを選択していたら
                             select_voice.play(0)
-                            gameschange = 5
+                            if len(afterchoice_item_lst) == 0:
+                                pass
+                            else:
+                                gameschange = 5
                         elif choice.index == 3:  # みのがすを選択していたら
                             pass
                 # 攻撃相手選択画面なら
@@ -805,17 +810,67 @@ def main():
                         gameschange = 3
                 elif gameschange == 4:
                     afterchoice_action.update(event.key)
-                    # if event.key == pg.K_RETURN:  # エンターキーを押されたら
-                    #     if choice.index == 0:
-                    #         self
                     if event.key == pg.K_ESCAPE:
                         select_voice.play(0)
                         gameschange = 0
+                    if event.key == pg.K_RETURN:  # エンターキーを押されたら
+                        if afterchoice_action.index == 0:
+                            select_voice.play(0)
+                            pass
+                        elif afterchoice_action.index == 1:
+                            select_voice.play(0)
+                            pass
+                        elif afterchoice_action.index == 2:
+                            select_voice.play(0)
+                            pass
+                        elif afterchoice_action.index == 3:
+                            select_voice.play(0)
+                            pass
                 elif gameschange == 5:
                     afterchoice_item.update(event.key)
                     if event.key == pg.K_ESCAPE:
                         select_voice.play(0)
                         gameschange = 0
+                    if event.key == pg.K_RETURN:  # エンターキーを押されたら
+                        if afterchoice_item.index == 0:
+                            select_voice.play(0)
+                            gameschange = 3
+                            if max_hp > hp.hp + 10:
+                                hp.hp += 10
+                            else:
+                                hp.hp = max_hp
+                            del afterchoice_item_lst[0]
+                        elif afterchoice_item.index == 1:
+                            select_voice.play(0)
+                            gameschange = 3
+                            if max_hp > hp.hp + 10:
+                                hp.hp += 10
+                            else:
+                                hp.hp = max_hp
+                            del afterchoice_item_lst[1]
+                            afterchoice_item.index = 0
+                        elif afterchoice_item.index == 2:
+                            select_voice.play(0)
+                            gameschange = 3
+                            if max_hp > hp.hp + 10:
+                                hp.hp += 10
+                            else:
+                                hp.hp = max_hp
+                            del afterchoice_item_lst[2]
+                            afterchoice_item.index = 0
+                        elif afterchoice_item.index == 3:
+                            select_voice.play(0)
+                            gameschange = 3
+                            if max_hp > hp.hp + 10:
+                                hp.hp += 10
+                            else:
+                                hp.hp = max_hp
+                            del afterchoice_item_lst[3]
+                            afterchoice_item.index = 0
+                            
+
+
+
         
         # 背景関連
         screen.fill((0,0,0))
