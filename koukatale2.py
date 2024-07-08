@@ -484,6 +484,7 @@ class AfterChoice:
         for i, choice in enumerate(self.txt_ls):
             rend_txt = self.font.render(choice, True, (255, 255, 255))
             screen.blit(rend_txt, (self.x, self.y))
+            # self.y += 60
             if i % 2 == 0:
                 self.x = WIDTH/2 + 40
             else:
@@ -491,7 +492,7 @@ class AfterChoice:
                 self.y += 60
 
 
-class AfterChoice_Aciton(pg.sprite.Sprite):
+class Choice_Aciton(pg.sprite.Sprite):
     """
     選択肢を選んだあとのこうどう画面に関するクラス
     """
@@ -519,6 +520,7 @@ class AfterChoice_Aciton(pg.sprite.Sprite):
                 color = (255, 255, 255)
             rend_txt = self.font.render(choice, True, color)
             screen.blit(rend_txt, (x, y))
+            # y += 60
             if i % 2 == 0:
                 x = WIDTH/2 + 40
             else:
@@ -539,7 +541,7 @@ class AfterChoice_Aciton(pg.sprite.Sprite):
             self.switch_voice.play(0)
 
 
-class AfterChoice_Item(pg.sprite.Sprite):
+class Choice_Item(pg.sprite.Sprite):
     """
     選択肢を選んだあとのこうどう画面に関するクラス
     """
@@ -567,6 +569,7 @@ class AfterChoice_Item(pg.sprite.Sprite):
                 color = (255, 255, 255)
             rend_txt = self.font.render(choice, True, color)
             screen.blit(rend_txt, (x, y))
+            # y += 60
             if i % 2 == 0:
                 x = WIDTH/2 + 40
             else:
@@ -722,6 +725,7 @@ def main():
     # シーン状態の推移
     scenechange = 1  # 0: タイトル, 1:ゲームプレイ, 2:ゲームオーバー 
     gameschange = 0  # 0：選択画面, 1：攻撃
+    # 6:こうかとんを分析, 7:こうかとんと話す, 8:こうかとんを焼く. 9:こうかとんを説得する
     # こうかとんの初期化
     kkton = Koukaton()
     # ハートの初期化
@@ -745,16 +749,16 @@ def main():
                  "アイテム", 
                  "みのがす"]
     choice = Choice(choice_ls, 10, HEIGHT - 80)
-    afterchoice_action_lst = ["＊　こうかとんを分析", 
+    choice_action_lst = ["＊　こうかとんを分析", 
                                              "＊　こうかとんと話す", 
                                              "＊　こうかとんを焼く", 
                                              "＊　こうかとんを説得する",]
-    afterchoice_action = (AfterChoice_Aciton(afterchoice_action_lst))
-    afterchoice_item_lst = ["＊　こうかとんエキス", 
+    choice_action = (Choice_Aciton(choice_action_lst))
+    choice_item_lst = ["＊　こうかとんエキス", 
                                 "＊　こうかとんジュース", 
                                 "＊　こうかとんエナジー", 
                                 "＊　こうかとんドリンク",]
-    afterchoice_item = (AfterChoice_Item(afterchoice_item_lst))
+    choice_item = (Choice_Item(choice_item_lst))
     # アタックバーの初期化
     attack_bar = AttackBar()
     # GameOverの初期化
@@ -768,6 +772,7 @@ def main():
     pygame.mixer.init()
     select_voice = pg.mixer.Sound("./voice/snd_select.wav")
     attack_voice = pg.mixer.Sound("./voice/attack.wav")
+    cure_voice = pg.mixer.Sound("./voice/cure.wav")
     sound = pg.mixer.Sound("./sound/Megalovania.mp3")
     sound.play(-1)
 
@@ -788,7 +793,7 @@ def main():
                             gameschange = 4
                         elif choice.index == 2:  # アイテムを選択していたら
                             select_voice.play(0)
-                            if len(afterchoice_item_lst) == 0:
+                            if len(choice_item_lst) == 0:
                                 pass
                             else:
                                 gameschange = 5
@@ -809,64 +814,81 @@ def main():
                         attack_rand = random.randint(0, 1)
                         gameschange = 3
                 elif gameschange == 4:
-                    afterchoice_action.update(event.key)
+                    choice_action.update(event.key)
                     if event.key == pg.K_ESCAPE:
                         select_voice.play(0)
                         gameschange = 0
                     if event.key == pg.K_RETURN:  # エンターキーを押されたら
-                        if afterchoice_action.index == 0:
+                        if choice_action.index == 0:
                             select_voice.play(0)
-                            pass
-                        elif afterchoice_action.index == 1:
+                            gameschange = 6
+                        elif choice_action.index == 1:
                             select_voice.play(0)
-                            pass
-                        elif afterchoice_action.index == 2:
+                            gameschange = 7
+                        elif choice_action.index == 2:
                             select_voice.play(0)
-                            pass
-                        elif afterchoice_action.index == 3:
+                            gameschange = 8
+                        elif choice_action.index == 3:
                             select_voice.play(0)
-                            pass
+                            gameschange = 9
                 elif gameschange == 5:
-                    afterchoice_item.update(event.key)
+                    choice_item.update(event.key)
                     if event.key == pg.K_ESCAPE:
                         select_voice.play(0)
                         gameschange = 0
                     if event.key == pg.K_RETURN:  # エンターキーを押されたら
-                        if afterchoice_item.index == 0:
-                            select_voice.play(0)
+                        if choice_item.index == 0:
+                            cure_voice.play(0)
                             gameschange = 3
                             if max_hp > hp.hp + 10:
                                 hp.hp += 10
                             else:
                                 hp.hp = max_hp
-                            del afterchoice_item_lst[0]
-                        elif afterchoice_item.index == 1:
-                            select_voice.play(0)
+                            del choice_item_lst[0]
+                        elif choice_item.index == 1:
+                            cure_voice.play(0)
                             gameschange = 3
                             if max_hp > hp.hp + 10:
                                 hp.hp += 10
                             else:
                                 hp.hp = max_hp
-                            del afterchoice_item_lst[1]
-                            afterchoice_item.index = 0
-                        elif afterchoice_item.index == 2:
-                            select_voice.play(0)
+                            del choice_item_lst[1]
+                            choice_item.index = 0
+                        elif choice_item.index == 2:
+                            cure_voice.play(0)
                             gameschange = 3
                             if max_hp > hp.hp + 10:
                                 hp.hp += 10
                             else:
                                 hp.hp = max_hp
-                            del afterchoice_item_lst[2]
-                            afterchoice_item.index = 0
-                        elif afterchoice_item.index == 3:
-                            select_voice.play(0)
+                            del choice_item_lst[2]
+                            choice_item.index = 0
+                        elif choice_item.index == 3:
+                            cure_voice.play(0)
                             gameschange = 3
                             if max_hp > hp.hp + 10:
                                 hp.hp += 10
                             else:
                                 hp.hp = max_hp
-                            del afterchoice_item_lst[3]
-                            afterchoice_item.index = 0
+                            del choice_item_lst[3]
+                            choice_item.index = 0
+
+                elif gameschange == 6:
+                    if event.key == pg.K_RETURN:
+                        select_voice.play(0)
+                        gameschange = 3
+                elif gameschange == 7:
+                    if event.key == pg.K_RETURN:
+                        select_voice.play(0)
+                        gameschange = 3
+                elif gameschange == 8:
+                    if event.key == pg.K_RETURN:
+                        select_voice.play(0)
+                        gameschange = 3
+                elif gameschange == 9:
+                    if event.key == pg.K_RETURN:
+                        select_voice.play(0)
+                        gameschange = 3
                             
 
 
@@ -974,7 +996,7 @@ def main():
                 # 選択肢後の画面に関する初期化
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice_action.draw(screen)
+                choice_action.draw(screen)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
@@ -986,7 +1008,59 @@ def main():
                 # 選択肢後の画面に関する初期化
                 kkton.update(screen)
                 # 攻撃相手の選択画面
-                afterchoice_item.draw(screen)
+                choice_item.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
+
+            elif gameschange == 6:
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice = AfterChoice(["こうかとん:Attack 3 Diffence 100", "この世の支配者"])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
+
+            elif gameschange == 7:
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice = AfterChoice(["こうかとんは、話を聞いてくれないようだ"])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
+
+            elif gameschange == 8:
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice = AfterChoice(["こうかとんにそんなことをしてはいけない"])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice.draw(screen)
+                # 体力バーの更新
+                hp.draw(screen)
+                hp.update()
+                # 選択肢の更新
+                choice.draw(screen)
+
+            elif gameschange == 9:
+                pg.draw.rect(screen,(255,255,255), Rect(10, HEIGHT/2-50, WIDTH-20, 300), 5)
+                # 選択肢後の画面に関する初期化
+                afterchoice = AfterChoice(["こうかとんは聞く耳を持たない"])   
+                kkton.update(screen)
+                # 攻撃相手の選択画面
+                afterchoice.draw(screen)
                 # 体力バーの更新
                 hp.draw(screen)
                 hp.update()
